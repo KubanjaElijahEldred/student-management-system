@@ -41,9 +41,9 @@ async function seedDatabase() {
     ]);
     console.log(`✅ Added ${teachers.length} teachers\n`);
     
-    // Add Students (one by one to trigger pre-save hooks for registration numbers)
+    // Add Students
     console.log('👥 Adding students...');
-    const studentData = [
+    const students = await Student.insertMany([
       { 
         name: 'Sarah Williams', 
         age: 20, 
@@ -79,14 +79,7 @@ async function seedDatabase() {
         course_ids: [103],
         courses: ['Bachelor of Information Technology']
       }
-    ];
-    
-    const students = [];
-    for (const data of studentData) {
-      const student = new Student(data);
-      await student.save();
-      students.push(student);
-    }
+    ]);
     console.log(`✅ Added ${students.length} students\n`);
     
     // Display added students with registration numbers

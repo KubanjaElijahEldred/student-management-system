@@ -242,6 +242,10 @@
   <main class="main-content" id="mainContent" style="display: none;">
     <header class="top-bar">
       <h1 id="pageTitle">Dashboard</h1>
+      <div class="global-search-container">
+        <input type="text" id="globalSearch" placeholder="🔍 Search students, courses, teachers..." onkeyup="handleGlobalSearch(event)">
+        <div id="globalSearchResults" class="global-search-results"></div>
+      </div>
       <div class="top-bar-actions">
         <button id="themeToggle" class="btn-icon" title="Toggle Dark/Light Theme" onclick="toggleTheme()">🌙</button>
         <button class="btn-icon" title="Refresh" onclick="location.reload()">🔄</button>
@@ -431,12 +435,11 @@
       <div class="form-section">
         <h3>Add New Course</h3>
         <form id="addCourseForm">
-          <input type="hidden" name="_id">
-          <input type="number" name="_id" placeholder="Course ID (e.g. 101)" required>
           <input type="text" name="code" placeholder="Course Code (3 letters, e.g. BSE)" required maxlength="3" style="text-transform: uppercase;">
           <input type="text" name="name" placeholder="Course Name" required>
-          <input type="text" name="teacher_id" placeholder="Teacher ID or Name (optional)">
-          <button type="submit">Add Course</button>
+          <input type="number" name="credits" placeholder="Credits (default: 3)" min="1" max="12">
+          <textarea name="description" placeholder="Course Description (optional)" rows="3"></textarea>
+          <button type="submit">➕ Add Course</button>
         </form>
       </div>
 
@@ -445,11 +448,10 @@
         <table id="coursesTable" class="widget-table" style="width: 100%;">
           <thead>
             <tr>
-              <th>ID</th>
               <th>Code</th>
               <th>Name</th>
-              <th>Teacher</th>
               <th>Credits</th>
+              <th>Description</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -1319,7 +1321,33 @@
   <datalist id="dlCourses"></datalist>
   <datalist id="dlTeachers"></datalist>
   
+  <!-- AI Student Companion Chat Window -->
+  <div id="aiChatWindow" class="ai-chat-window" style="display: none;">
+    <div class="ai-chat-header">
+      <div class="ai-chat-title">
+        <span class="ai-chat-icon">🤖</span>
+        <span>AI Student Companion</span>
+      </div>
+      <div class="ai-chat-actions">
+        <button onclick="clearAIChat()" class="ai-btn-clear" title="Clear chat">🗑️</button>
+        <button onclick="toggleAIChat()" class="ai-btn-close" title="Close">✖️</button>
+      </div>
+    </div>
+    <div id="aiChatMessages" class="ai-chat-messages"></div>
+    <div class="ai-chat-input-container">
+      <input type="text" id="aiChatInput" placeholder="Ask me anything..." autocomplete="off">
+      <button id="aiSendBtn" class="ai-send-btn">📤</button>
+    </div>
+  </div>
+
+  <!-- AI Chat Toggle Button (Floating) -->
+  <button id="aiChatBtn" class="ai-chat-toggle-btn" onclick="toggleAIChat()" title="Open AI Companion">
+    🤖
+  </button>
+  
   <script src="queries.js?v=2.7"></script>
   <script src="app.js?v=2.7"></script>
+  <script src="global-search.js?v=2.7"></script>
+  <script src="ai-companion.js?v=2.7"></script>
 </body>
 </html>

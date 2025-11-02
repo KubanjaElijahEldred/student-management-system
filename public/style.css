@@ -74,6 +74,8 @@ body {
   background-color: var(--main-bg);
   color: var(--text-primary);
   transition: all 0.3s ease;
+  width: 100vw;
+  max-width: 100vw;
 }
 
 /* Sidebar */
@@ -203,6 +205,9 @@ body {
   display: block;
   overflow: hidden;
   position: relative;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .top-bar {
@@ -213,6 +218,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 30px;
+  gap: 20px;
   z-index: 50;
   transition: background 0.3s ease;
   position: absolute;
@@ -224,6 +230,112 @@ body {
 .top-bar h1 {
   font-size: 24px;
   color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* Global Search */
+.global-search-container {
+  position: relative;
+  flex: 1;
+  max-width: 500px;
+}
+
+.global-search-container input {
+  width: 100%;
+  padding: 10px 15px;
+  border: 2px solid var(--border-color);
+  border-radius: 25px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.global-search-container input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+}
+
+.global-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--card-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  margin-top: 5px;
+  max-height: 400px;
+  overflow-y: auto;
+  display: none;
+  z-index: 1000;
+  box-shadow: var(--shadow-hover);
+}
+
+.global-search-results.active {
+  display: block;
+}
+
+.search-result-item {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.search-result-item:hover {
+  background: var(--table-hover);
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-type {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.search-result-type.student {
+  background: #E3F2FD;
+  color: #1976D2;
+}
+
+.search-result-type.course {
+  background: #F3E5F5;
+  color: #7B1FA2;
+}
+
+.search-result-type.teacher {
+  background: #E8F5E9;
+  color: #388E3C;
+}
+
+.search-result-type.payment {
+  background: #FFF3E0;
+  color: #F57C00;
+}
+
+.search-result-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.search-result-detail {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+.search-no-results {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
 }
 
 .top-bar-actions {
@@ -258,23 +370,29 @@ body {
   background: var(--main-bg);
   transition: background 0.3s ease;
   box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .page.active {
   display: block;
   overflow-y: auto;
   overflow-x: hidden;
-  height: 100vh; /* Full viewport height */
+  height: calc(100vh - 0px);
   max-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Dashboard Grid */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
   width: 100%;
   max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Statistics Cards */
@@ -550,37 +668,59 @@ body {
   transform: translateY(-2px);
 }
 
-/* Auth Page Container */
+/* Authentication Page Styles */
 .auth-page-container {
   position: fixed;
   inset: 0;
+  background-image: url('https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=1920&q=80');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: 
-    linear-gradient(135deg, rgba(0, 188, 212, 0.9) 0%, rgba(0, 131, 143, 0.9) 100%),
-    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="10" cy="10" r="2" fill="white" opacity="0.3"/><circle cx="40" cy="20" r="1.5" fill="white" opacity="0.2"/><circle cx="70" cy="15" r="2.5" fill="white" opacity="0.25"/><circle cx="90" cy="30" r="1" fill="white" opacity="0.3"/><circle cx="20" cy="50" r="2" fill="white" opacity="0.2"/><circle cx="60" cy="60" r="1.5" fill="white" opacity="0.3"/><circle cx="85" cy="70" r="2" fill="white" opacity="0.25"/><circle cx="30" cy="80" r="1.5" fill="white" opacity="0.2"/><circle cx="75" cy="90" r="2.5" fill="white" opacity="0.3"/><text x="5" y="40" font-size="15" fill="white" opacity="0.1">📚</text><text x="50" y="70" font-size="12" fill="white" opacity="0.1">🎓</text><text x="80" y="50" font-size="10" fill="white" opacity="0.1">📖</text></svg>');
-  background-size: cover, 100px 100px;
   z-index: 9999;
 }
 
+/* Subtle overlay for readability */
+.auth-page-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+.auth-page-container > * {
+  position: relative;
+  z-index: 2;
+}
+
 body.dark-theme .auth-page-container {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background-image: url('https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=1920&q=80');
+}
+
+body.dark-theme .auth-page-container::before {
+  background: rgba(0, 0, 0, 0.6);
 }
 
 .auth-box {
-  background: white;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(15px);
   padding: 40px;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   width: 90%;
   max-width: 450px;
   text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 body.dark-theme .auth-box {
-  background: var(--card-bg);
+  background: rgba(42, 42, 60, 0.75);
+  backdrop-filter: blur(15px);
   color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .auth-box h1 {
@@ -657,11 +797,14 @@ body.dark-theme .auth-form h2 {
   border-radius: 8px;
   font-size: 14px;
   transition: border-color 0.3s;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(5px);
 }
 
 body.dark-theme .auth-form input,
 body.dark-theme .auth-form select {
-  background: var(--input-bg);
+  background: rgba(42, 42, 60, 0.6);
+  backdrop-filter: blur(5px);
   border-color: var(--border-color);
   color: var(--text-primary);
 }
@@ -741,18 +884,55 @@ body.dark-theme .auth-form select {
 
 /* === Print Styles === */
 @media print {
+  /* Page setup - single page with NO margins to avoid browser headers */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  
+  /* Add internal padding to content instead */
+  #printableReportCard {
+    padding: 15mm 10mm !important;
+  }
+  
   /* Force print background images and colors */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    color-adjust: exact !important;
   }
   
-  /* Hide everything except the student profile modal when printing */
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Hide ALL headers, footers, page decorations */
+  body::before,
+  body::after,
+  html::before,
+  html::after {
+    display: none !important;
+    content: none !important;
+  }
+  
+  /* Hide everything except modals when printing */
   body * {
     visibility: hidden;
   }
   
+  /* Hide header, sidebar, all navigation */
+  header,
+  .top-bar,
+  .sidebar,
+  nav,
+  .nav-item,
+  #mainSidebar,
+  .main-sidebar {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  /* Show student profile modal */
   #studentProfileModal,
   #studentProfileModal * {
     visibility: visible;
@@ -768,6 +948,116 @@ body.dark-theme .auth-form select {
     margin: 0;
     display: block !important;
     z-index: 9999;
+  }
+  
+  /* Show report card modal */
+  #reportCardModal,
+  #reportCardModal * {
+    visibility: visible !important;
+  }
+  
+  #reportCardModal {
+    position: static !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    max-height: none !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+  
+  #reportCardModal > div {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+  
+  #reportCardContent {
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+  
+  #printableReportCard {
+    width: 100%;
+    max-width: 100%;
+    page-break-inside: avoid;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Reduce spacing to fit on one page */
+  #printableReportCard h1 {
+    font-size: 22px !important;
+    margin: 5px 0 !important;
+  }
+  
+  #printableReportCard h3 {
+    font-size: 14px !important;
+    margin: 8px 0 4px 0 !important;
+    padding-bottom: 3px !important;
+  }
+  
+  #printableReportCard p {
+    margin: 3px 0 !important;
+    font-size: 11px !important;
+  }
+  
+  /* Compact student info section */
+  #printableReportCard > div:nth-child(2) {
+    margin-bottom: 10px !important;
+    padding: 12px !important;
+  }
+  
+  /* Compact tables */
+  #printableReportCard table {
+    margin: 8px 0 !important;
+    font-size: 11px !important;
+  }
+  
+  #printableReportCard table th,
+  #printableReportCard table td {
+    padding: 6px !important;
+  }
+  
+  /* Compact summary section */
+  #printableReportCard > div:nth-child(4) {
+    margin: 10px 0 !important;
+    padding: 12px !important;
+  }
+  
+  /* Compact fees section */
+  #printableReportCard > div:nth-child(6) {
+    padding: 10px !important;
+    margin: 10px 0 !important;
+  }
+  
+  /* Compact comment sections */
+  #printableReportCard textarea {
+    min-height: 50px !important;
+    padding: 6px !important;
+    font-size: 11px !important;
+  }
+  
+  #printableReportCard input[type="text"] {
+    padding: 4px !important;
+    font-size: 11px !important;
+  }
+  
+  /* Remove gradients and decorative backgrounds */
+  #printableReportCard div[style*="gradient"],
+  #printableReportCard div[style*="linear-gradient"] {
+    background: white !important;
+    border: 1px solid #ddd !important;
   }
   
   /* Ensure modal inner content is visible */
@@ -873,52 +1163,6 @@ body.dark-theme .auth-form select {
   .no-print {
     display: none !important;
   }
-  
-  /* Report Card Print Styles */
-  #reportCardModal {
-    position: static !important;
-    background: white !important;
-    padding: 0 !important;
-  }
-  
-  #reportCardModal > div {
-    max-width: 100% !important;
-    width: 100% !important;
-    box-shadow: none !important;
-    margin: 0 !important;
-  }
-  
-  #reportCardModal button {
-    display: none !important;
-  }
-  
-  #reportCardContent {
-    background: white !important;
-    color: black !important;
-  }
-  
-  #printableReportCard {
-    page-break-inside: avoid;
-  }
-  
-  #printableReportCard h3 {
-    page-break-after: avoid;
-    color: #00BCD4 !important;
-  }
-  
-  #printableReportCard table {
-    page-break-inside: avoid;
-  }
-  
-  #printableReportCard img {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-  
-  /* Show input/textarea content clearly in print */
-  #teacherComment,
-  #teacherSignature,
-  #headteacherComment,
   #headteacherSignature,
   #studentName,
   #studentRegNo {
@@ -936,22 +1180,333 @@ body.dark-theme .auth-form select {
     font-weight: normal !important;
   }
   
-  /* Hide save button when printing */
-  button[onclick*="saveReportCardComments"] {
+  /* Hide all buttons when printing report card */
+  #reportCardModal button,
+  button[onclick*="saveReportCardComments"],
+  button[onclick*="reportCardPhotoUpload"],
+  #closeReportCard,
+  #printReportCard,
+  #reportCardPhotoUpload {
     display: none !important;
   }
   
-  /* Ensure report card modal is fully visible */
-  #reportCardModal,
-  #reportCardModal *,
-  #reportCardContent,
-  #reportCardContent * {
-    visibility: visible !important;
+  /* Hide the cyan header bar with "Student Report Card" text */
+  #reportCardModal > div > div:first-child {
+    display: none !important;
   }
   
-  /* Hide close and print buttons in report card */
-  #closeReportCard,
-  #printReportCard {
+  /* Hide file input */
+  input[type="file"] {
+    display: none !important;
+  }
+  
+  /* Make input fields look clean in print */
+  #reportCardModal input[type="text"],
+  #reportCardModal textarea {
+    border: 1px solid #ddd !important;
+    background: white !important;
+    color: black !important;
+  }
+  
+  /* Remove all borders and boxes showing in print */
+  #reportCardModal,
+  #reportCardModal > div,
+  #reportCardContent {
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+}
+
+/* === AI Student Companion Styles === */
+
+/* Floating chat toggle button */
+.ai-chat-toggle-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00BCD4, #00838F);
+  border: none;
+  font-size: 28px;
+  cursor: grab;
+  box-shadow: 0 4px 12px rgba(0, 188, 212, 0.4);
+  transition: box-shadow 0.3s ease;
+  z-index: 999;
+  display: none; /* Hidden by default, shown by JavaScript after login */
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  touch-action: none;
+}
+
+.ai-chat-toggle-btn:hover {
+  box-shadow: 0 6px 20px rgba(0, 188, 212, 0.6);
+}
+
+.ai-chat-toggle-btn:active {
+  cursor: grabbing;
+}
+
+/* Chat window */
+.ai-chat-window {
+  position: fixed;
+  bottom: 100px;
+  right: 30px;
+  width: 400px;
+  height: 600px;
+  background: var(--card-bg);
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  z-index: 998;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* Chat header */
+.ai-chat-header {
+  background: linear-gradient(135deg, #00BCD4, #00838F);
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ai-chat-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.ai-chat-icon {
+  font-size: 24px;
+}
+
+.ai-chat-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ai-btn-clear,
+.ai-btn-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.ai-btn-clear:hover,
+.ai-btn-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* Chat messages */
+.ai-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--main-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Individual message */
+.ai-message {
+  display: flex;
+  gap: 10px;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  background: var(--card-bg);
+}
+
+.ai-message-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ai-message-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.ai-message-text {
+  padding: 12px 15px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ai-message-user .ai-message-text {
+  background: #00BCD4;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.ai-message-assistant .ai-message-text {
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-bottom-left-radius: 4px;
+}
+
+/* Typing indicator */
+.ai-typing-indicator {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.ai-typing-dots {
+  display: flex;
+  gap: 5px;
+  padding: 12px 15px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.ai-typing-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  animation: typingDot 1.4s infinite;
+}
+
+.ai-typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.ai-typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingDot {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
+}
+
+/* Chat input */
+.ai-chat-input-container {
+  display: flex;
+  gap: 10px;
+  padding: 15px;
+  background: var(--card-bg);
+  border-top: 1px solid var(--border-color);
+  position: relative;
+  z-index: 10;
+}
+
+#aiChatInput {
+  flex: 1;
+  padding: 12px 15px;
+  border: 2px solid var(--border-color);
+  border-radius: 25px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: all 0.3s;
+  cursor: text;
+  user-select: text;
+  pointer-events: auto;
+}
+
+#aiChatInput:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+}
+
+.ai-send-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary-color);
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-send-btn:hover {
+  background: var(--primary-dark);
+  transform: scale(1.05);
+}
+
+.ai-send-btn:active {
+  transform: scale(0.95);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .ai-chat-window {
+    width: calc(100vw - 20px);
+    height: calc(100vh - 120px);
+    right: 10px;
+    bottom: 90px;
+  }
+  
+  .ai-chat-toggle-btn {
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+  }
+}
+
+/* Hide AI chat in print */
+@media print {
+  .ai-chat-window,
+  .ai-chat-toggle-btn {
     display: none !important;
   }
 }
