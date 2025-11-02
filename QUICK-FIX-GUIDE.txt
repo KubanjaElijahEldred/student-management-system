@@ -1,0 +1,108 @@
+╔════════════════════════════════════════════════════════════════╗
+║                 QUICK FIX GUIDE - DO THIS NOW                  ║
+╚════════════════════════════════════════════════════════════════╝
+
+┌────────────────────────────────────────────────────────────────┐
+│ ISSUE 1: NO EXAM PASS NUMBER                                   │
+└────────────────────────────────────────────────────────────────┘
+
+WHY: Your payments are "Tuition Fee" ← This doesn't generate passes!
+
+FIX IN 5 STEPS:
+
+  1. Click "💳 Payments" in sidebar
+  
+  2. Scroll to "Submit New Payment" form
+  
+  3. Fill in:
+     ┌─────────────────────────────────┐
+     │ Student: sarah                  │
+     │ Type: Exam Fee ← IMPORTANT!    │
+     │ Amount: 25                      │
+     │ Method: Cash                    │
+     │ Semester: Semester 1, Year 1    │
+     │ Academic Year: 2024/2025        │
+     └─────────────────────────────────┘
+  
+  4. Click "💰 Submit Payment"
+  
+  5. In table, find new payment → Click "✅ Confirm"
+  
+  RESULT: You'll see alert:
+     "Payment confirmed successfully!
+      🎫 Exam Pass Generated!
+      Pass Number: EP-2025-000001"
+  
+  TABLE WILL SHOW:
+     Exam Pass # column: 🎫 EP-2025-000001 ← Blue badge!
+
+┌────────────────────────────────────────────────────────────────┐
+│ ISSUE 2: PHOTOS NOT SHOWING                                    │
+└────────────────────────────────────────────────────────────────┘
+
+QUICK DIAGNOSTIC:
+
+  1. Press F12 → Go to "Console" tab
+  
+  2. Click "Students" in sidebar
+  
+  3. Look for this line:
+     "📸 Photo URLs: [{name: 'sarah', photoUrl: '/uploads/...'}]"
+  
+  4. Copy one of the photoUrl values (e.g., /uploads/xyz.jpg)
+  
+  5. Open new tab, go to:
+     http://localhost:8080/uploads/xyz.jpg
+     (replace xyz.jpg with actual filename)
+
+IF PHOTO LOADS:
+  → Photos work! Just need to refresh
+  → Press Ctrl + F5 to hard refresh
+  → Clear cache: Ctrl + Shift + Delete
+
+IF PHOTO DOESN'T LOAD (404 error):
+  → Server issue
+  → Restart server:
+     1. In terminal, press Ctrl+C
+     2. Run: npm start
+     3. Refresh browser
+
+ALTERNATIVE: Add new student with photo
+  1. Students → "Add New Student"
+  2. Fill name, age, etc.
+  3. Click "Choose File" → Select any photo
+  4. Submit
+  5. New student's photo should appear
+  
+  If it works for new student:
+    → Old students need photos re-uploaded
+    → Click ✏️ Edit → Upload photo → Save
+
+┌────────────────────────────────────────────────────────────────┐
+│ STILL NOT WORKING?                                             │
+└────────────────────────────────────────────────────────────────┘
+
+Run this in terminal:
+
+  cd backend
+  node check-photos.js
+
+This shows which students have photos in database.
+
+Then send me:
+  1. Screenshot of browser console (F12)
+  2. Screenshot of terminal where server runs
+  3. Output of check-photos.js
+
+╔════════════════════════════════════════════════════════════════╗
+║                        IMPORTANT                               ║
+╠════════════════════════════════════════════════════════════════╣
+║  EXAM PASS ONLY WORKS FOR "Exam Fee" PAYMENT TYPE!            ║
+║                                                                ║
+║  Current payments:                                             ║
+║    RCP-2025-000002: Tuition Fee ← No pass ❌                   ║
+║    RCP-2025-000001: Tuition Fee ← No pass ❌                   ║
+║                                                                ║
+║  You need:                                                     ║
+║    RCP-2025-000003: Exam Fee ← Will generate pass ✅           ║
+╚════════════════════════════════════════════════════════════════╝

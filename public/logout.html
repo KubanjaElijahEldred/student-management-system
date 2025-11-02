@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Logout - Student Management</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #00BCD4 0%, #00838F 100%);
+      font-family: Arial, sans-serif;
+    }
+    .box {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    h1 { color: #00BCD4; margin-bottom: 20px; }
+    p { margin: 20px 0; color: #666; }
+    button {
+      padding: 12px 24px;
+      background: #00BCD4;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    button:hover {
+      background: #00ACC1;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>🚪 Logout</h1>
+    <p>Click the button below to logout and see the auth page.</p>
+    <button onclick="doLogout()">Logout Now</button>
+  </div>
+  
+  <script>
+    function doLogout() {
+      // Clear all storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Redirect to main page
+      alert('✅ Logged out! You will now see the auth page.');
+      window.location.href = '/';
+    }
+  </script>
+</body>
+</html>

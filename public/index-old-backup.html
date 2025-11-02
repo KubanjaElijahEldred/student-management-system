@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Student Management System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Student Management System</h1>
+    <div id="profile" style="position:absolute; top:16px; right:16px; display:flex; align-items:center; gap:12px;">
+      <img id="profilePhoto" src="" alt="profile" style="width:40px; height:40px; border-radius:50%; object-fit:cover; display:none; border:2px solid gold;">
+      <span id="profileName" style="color:gold;"></span>
+      <button id="logoutBtn" style="display:none; padding:8px 16px; background:linear-gradient(135deg, #dc3545, #c82333); color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Logout</button>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div id="editStudentModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center;">
+      <div style="background:#111; border:1px solid gold; border-radius:12px; padding:20px; width:90%; max-width:800px; color:#fff;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3>Edit Student</h3>
+          <button id="closeEditStudent">Close</button>
+        </div>
+        <form id="editStudentForm" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <input type="hidden" name="_id" id="edit_id">
+          <div>
+            <label>Name</label>
+            <input name="name" id="edit_name" required>
+          </div>
+          <div>
+            <label>Gender</label>
+            <input name="gender" id="edit_gender" placeholder="Male/Female">
+          </div>
+          <div>
+            <label>Age</label>
+            <input name="age" id="edit_age" type="number">
+          </div>
+          <div>
+            <label>Date of Birth</label>
+            <input name="dob" id="edit_dob" type="date">
+          </div>
+          <div>
+            <label>Phone</label>
+            <input name="contact.phone" id="edit_phone">
+          </div>
+          <div>
+            <label>Email</label>
+            <input name="contact.email" id="edit_email" type="email">
+          </div>
+          <div style="grid-column: span 2;">
+            <label>Address</label>
+            <input name="contact.address" id="edit_address">
+          </div>
+          <div style="grid-column: span 2;">
+            <label>Course IDs (comma numbers)</label>
+            <input name="course_ids" id="edit_course_ids" placeholder="101,102">
+          </div>
+          <div style="grid-column: span 2;">
+            <label>Photo (upload to replace)</rlabel>
+            <input name="photo" id="edit_photo" type="file" accept="image/*">
+          </div>
+          <div style="grid-column: span 2; display:flex; gap:8px; justify-content:flex-end;">
+            <button type="submit">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Global datalists for auto-complete -->
+    <datalist id="dlStudents"></datalist>
+    <datalist id="dlCourses"></datalist>
+    <datalist id="dlTeachers"></datalist>
+    <nav class="tabs" style="margin: 20px 0;">
+      <button data-target="homePanel">Home</button>
+      <button data-target="studentsPanel">Students</button>
+      <button data-target="coursesPanel">Courses</button>
+      <button data-target="teachersPanel">Teachers</button>
+      <button data-target="resultsPanel">Results</button>
+      <button data-target="classesPanel">Classes</button>
+      <button data-target="enrollmentPanel">Enrollment</button>
+      <button data-target="attendancePanel">Attendance</button>
+      <button data-target="authPanel">Auth</button>
+    </nav>
+
+    <section id="homePanel" class="panel" style="display:none; width:100%;">
+      <h2>Welcome</h2>
+      <p style="margin:8px 0 16px; color:#ccc;">Use the navigation to manage Students, Courses, Teachers, Results and Attendance.</p>
+      <div class="dashboard">
+        <div class="card">
+          <div class="card-title">Students</div>
+          <div class="card-value" id="countStudents">—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Courses</div>
+          <div class="card-value" id="countCourses">—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Teachers</div>
+          <div class="card-value" id="countTeachers">—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Results</div>
+          <div class="card-value" id="countResults">—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Attendance</div>
+          <div class="card-value" id="countAttendance">—</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="classesPanel" class="panel" style="display:none; width:100%;">
+      <h2>Classes</h2>
+      <form id="addClassForm" style="margin:20px auto; max-width:600px; display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <div style="grid-column: span 2;">
+          <label>Name</label>
+          <input name="name" required placeholder="e.g. Year 1 - A">
+        </div>
+        <div>
+          <label>Department</label>
+          <input name="department" placeholder="e.g. Computer Science">
+        </div>
+        <div>
+          <label>Year</label>
+          <input name="year" type="number" placeholder="e.g. 1">
+        </div>
+        <div>
+          <label>Section</label>
+          <input name="section" placeholder="e.g. A">
+        </div>
+        <div style="grid-column: span 2; display:flex; justify-content:flex-end; gap:8px;">
+          <button type="submit">Create Class</button>
+        </div>
+      </form>
+
+      <section class="table-section">
+        <h3>All Classes</h3>
+        <table id="classesTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Department</th>
+              <th>Year</th>
+              <th>Section</th>
+              <th>Students</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </section>
+
+    <!-- Class Members Modal -->
+    <div id="classMembersModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center;">
+      <div style="background:#111; border:1px solid gold; border-radius:12px; padding:20px; width:90%; max-width:800px; color:#fff;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3>Class Members</h3>
+          <button id="closeClassMembers">Close</button>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px;">
+          <input id="classMembersAddStudent" placeholder="type name or paste ID" list="dlStudents" style="flex:1;">
+          <button id="classMembersAddBtn">Add Student</button>
+        </div>
+        <div id="classMembersList"></div>
+      </div>
+    </div>
+
+    <section id="enrollmentPanel" class="panel" style="display:none; width:100%;">
+      <h2>Enrollment</h2>
+      <form id="addEnrollmentForm" style="margin: 20px auto; max-width: 560px; display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <div style="grid-column: span 2;">
+          <label>Student</label>
+          <input name="student_id" placeholder="type name or paste ID" list="dlStudents">
+        </div>
+        <div>
+          <label>Semester</label>
+          <input name="semester" placeholder="e.g. 2025-Fall" required>
+        </div>
+        <div>
+          <label>Course IDs (comma numbers or names)</label>
+          <input name="course_ids" placeholder="101,102 or by name" list="dlCourses">
+        </div>
+        <div style="grid-column: span 2; display:flex; justify-content:flex-end; gap:8px;">
+          <button type="submit">Create Enrollment</button>
+        </div>
+      </form>
+      <section class="table-section">
+        <h3>All Enrollments</h3>
+        <table id="enrollmentsTable">
+          <thead>
+            <tr>
+              <th>Registration No</th>
+              <th>Student</th>
+              <th>Semester</th>
+              <th>Course IDs</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </section>
+
+    <!-- Student Profile Modal -->
+    <div id="studentProfileModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center;">
+      <div style="background:#111; border:1px solid gold; border-radius:12px; padding:20px; width:90%; max-width:800px; color:#fff;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3>Student Profile</h3>
+          <div>
+            <button id="printStudentProfile">Print</button>
+            <button id="closeStudentProfile">Close</button>
+          </div>
+        </div>
+        <div id="studentProfileContent">
+          <!-- Filled dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <section id="studentsPanel" class="panel" style="display: none; width: 100%;">
+      <h2>Students</h2>
+      <div class="students-container" style="max-width: 1000px; margin: 0 auto;">
+        <h3 style="text-align: center;">Manage Students</h3>
+        <div style="display: flex; flex-direction: column; align-items: center;">
+          <form id="addStudentForm" style="margin: 0 0 16px; max-width: 500px; width: 100%;">
+            <label>Optional ID (number)</label>
+            <input name="_id" type="number" placeholder="Leave empty for auto-id">
+            <label>Name</label>
+            <input name="name" required>
+            <label>Age</label>
+            <input name="age" type="number">
+            <label>Gender</label>
+            <input name="gender" placeholder="Male/Female">
+            <label>Course IDs (comma numbers or names)</label>
+            <input name="course_ids" placeholder="101,102 or by name" list="dlCourses">
+            <label>Photo (choose file or use camera)</label>
+            <input name="photo" type="file" accept="image/*">
+            <div style="margin:8px 0;">
+              <button type="button" id="openStudentCameraBtn">Use Camera</button>
+              <button type="button" id="captureStudentBtn" disabled>Capture</button>
+            </div>
+            <video id="studentCamera" autoplay playsinline style="display:none; width:100%; max-height:240px; background:#000;"></video>
+            <canvas id="studentSnapshot" style="display:none;"></canvas>
+            <input type="hidden" name="photoData" id="studentPhotoData">
+            <button type="submit">Add</button>
+          </form>
+        </div>
+        <section class="table-section">
+          <table id="studentsTable">
+              <thead>
+                <tr>
+                  <th>Photo</th>
+                  <th>Reg. No</th>
+                  <th>Name</th>
+                  <th>Age</th>
+                  <th>Gender</th>
+                  <th>Course IDs</th>
+                  <th>Courses</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </section>
+      </div>
+    </section>
+
+    <section id="coursesPanel" class="panel" style="display: none; width: 100%;">
+      <h2>Courses</h2>
+      <form id="addCourseForm" style="margin: 20px auto; max-width: 400px;">
+        <label>Course ID (number)</label>
+        <input name="_id" type="number" required>
+        <label>Course Code (e.g., BSE, CSE, ENG)</label>
+        <input name="code" required placeholder="3 letter code" maxlength="3" style="text-transform:uppercase;">
+        <label>Name</label>
+        <input name="name" required>
+        <label>Teacher (ID or name)</label>
+        <input name="teacher_id" type="text" list="dlTeachers">
+        <button type="submit">Add</button>
+      </form>
+      <section class="table-section">
+        <h3>All Courses</h3>
+        <table id="coursesTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Teacher ID</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+      <ul id="coursesList" style="display:none"></ul>
+    </section>
+
+    <section id="teachersPanel" class="panel" style="display: none; width: 100%;">
+      <h2>Teachers</h2>
+      <form id="addTeacherForm" style="margin: 20px auto; max-width: 400px;">
+        <label>Teacher ID (number)</label>
+        <input name="_id" type="number" required>
+        <label>Name</label>
+        <input name="name" required>
+        <label>Subject</label>
+        <input name="subject">
+        <!-- teacher form keeps its own ID; courses form uses teacher autocomplete -->
+        <label>Photo (choose file or use camera)</label>
+        <input name="photo" type="file" accept="image/*">
+        <div style="margin:8px 0;">
+          <button type="button" id="openTeacherCameraBtn">Use Camera</button>
+          <button type="button" id="captureTeacherBtn" disabled>Capture</button>
+        </div>
+        <video id="teacherCamera" autoplay playsinline style="display:none; width:100%; max-height:240px; background:#000;"></video>
+        <canvas id="teacherSnapshot" style="display:none;"></canvas>
+        <input type="hidden" name="photoData" id="teacherPhotoData">
+        <button type="submit">Add</button>
+      </form>
+      <section class="table-section">
+        <h3>All Teachers</h3>
+        <table id="teachersTable">
+          <thead>
+            <tr>
+              <th>Photo</th>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Subject</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+      <ul id="teachersList" style="display:none"></ul>
+    </section>
+
+    <section id="resultsPanel" class="panel" style="display: none; width: 100%;">
+      <h2>Results</h2>
+      <form id="addResultForm" style="margin: 20px auto; max-width: 400px;">
+        <label>Student (type name or paste ID)</label>
+        <input name="student_id" type="text" list="dlStudents" required placeholder="Select student">
+        <label>Course ID</label>
+        <input name="course_id" type="text" list="dlCourses" required>
+        <label>Score</label>
+        <input name="score" type="number">
+        <label>Grade</label>
+        <input name="grade">
+        <button type="submit">Add</button>
+      </form>
+      <section class="table-section">
+        <h3>All Results</h3>
+        <table id="resultsTable">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Course ID</th>
+              <th>Score</th>
+              <th>Grade</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+      <ul id="resultsList" style="display:none"></ul>
+    </section>
+
+    <section id="attendancePanel" class="panel" style="display: none; width: 100%;">
+      <h2>Attendance</h2>
+      <form id="addAttendanceForm" style="margin: 20px auto; max-width: 400px;">
+        <label>Student (type name or paste ID)</label>
+        <input name="student_id" type="text" list="dlStudents" required placeholder="Select student">
+        <label>Course ID</label>
+        <input name="course_id" type="text" list="dlCourses" required>
+        <label>Date</label>
+        <input name="date" type="date" required>
+        <label>Present</label>
+        <input name="present" type="checkbox">
+        <button type="submit">Add</button>
+      </form>
+      <form id="attendanceSummaryForm" style="margin: 10px auto; max-width: 480px; display:grid; grid-template-columns: 1fr 1fr auto; gap:8px; align-items:end;">
+        <div>
+          <label>Summary: Student</label>
+          <input name="student_id" type="text" list="dlStudents" placeholder="Select student" required>
+        </div>
+        <div>
+          <label>Course ID (optional)</label>
+          <input name="course_id" type="text" list="dlCourses" placeholder="e.g. 101">
+        </div>
+        <div>
+          <button type="submit">Get Summary</button>
+        </div>
+      </form>
+      <div id="attendanceSummary" style="margin: 0 auto 10px; max-width: 480px;"></div>
+      <section class="table-section">
+        <h3>All Attendance</h3>
+        <table id="attendanceTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Student</th>
+              <th>Course ID</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+      <ul id="attendanceList" style="display:none"></ul>
+    </section>
+
+    <section id="authPanel" class="panel" style="display:none; width:100%; max-width:900px; margin:0 auto;">
+      <h2>Authentication</h2>
+      <div style="display:flex; gap:24px; flex-wrap:wrap; justify-content:center;">
+        <form id="signupForm" style="flex:1; min-width:300px; max-width:420px;">
+          <h3>Create Account</h3>
+          <label>Name</label>
+          <input name="name" required>
+          <label>Email</label>
+          <input name="email" type="email" required>
+          <label>Password</label>
+          <input name="password" type="password" required>
+          <label>Role</label>
+          <select name="role">
+            <option value="student" selected>Student</option>
+            <option value="teacher">Teacher</option>
+            <option value="admin">Admin</option>
+          </select>
+          <label>Photo (choose file or use camera)</label>
+          <input name="photo" type="file" accept="image/*">
+          <div style="margin:8px 0;">
+            <button type="button" id="openCameraBtn">Use Camera</button>
+            <button type="button" id="captureBtn" disabled>Capture</button>
+          </div>
+          <video id="camera" autoplay playsinline style="display:none; width:100%; max-height:240px; background:#000;"></video>
+          <canvas id="snapshot" style="display:none;"></canvas>
+          <input type="hidden" name="photoData" id="photoData">
+          <button type="submit">Sign Up</button>
+          <p id="signupMsg"></p>
+        </form>
+
+        <form id="loginForm" style="flex:1; min-width:300px; max-width:420px;">
+          <h3>Login</h3>
+          <label>Email</label>
+          <input name="email" type="email" required>
+          <label>Password</label>
+          <input name="password" type="password" required>
+          <button type="submit">Login</button>
+          <p id="loginMsg"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

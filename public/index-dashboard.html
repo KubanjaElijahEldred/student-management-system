@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Student Management Dashboard</title>
+  <link rel="stylesheet" href="style-dashboard.css?v=2.0">
+</head>
+<body>
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <h2>📚 SMS</h2>
+        <p>Student Management</p>
+      </div>
+      <div class="user-profile" id="sidebarProfile">
+        <img id="sidebarPhoto" src="" alt="User" class="profile-img">
+        <div class="profile-info">
+          <span id="sidebarName" class="profile-name">Guest</span>
+          <span id="sidebarRole" class="profile-role">Not logged in</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="dashboard">
+        <span class="icon">🏠</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-page="students">
+        <span class="icon">👥</span>
+        <span>Students</span>
+      </a>
+      <a href="#" class="nav-item" data-page="courses">
+        <span class="icon">📚</span>
+        <span>Courses</span>
+      </a>
+      <a href="#" class="nav-item" data-page="teachers">
+        <span class="icon">👨‍🏫</span>
+        <span>Teachers</span>
+      </a>
+      <a href="#" class="nav-item" data-page="classes">
+        <span class="icon">🏫</span>
+        <span>Classes</span>
+      </a>
+      <a href="#" class="nav-item" data-page="enrollment">
+        <span class="icon">📝</span>
+        <span>Enrollment</span>
+      </a>
+      <a href="#" class="nav-item" data-page="results">
+        <span class="icon">📊</span>
+        <span>Results</span>
+      </a>
+      <a href="#" class="nav-item" data-page="attendance">
+        <span class="icon">✅</span>
+        <span>Attendance</span>
+      </a>
+      <a href="#" class="nav-item" data-page="queries">
+        <span class="icon">🔍</span>
+        <span>MongoDB Queries</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button id="logoutBtnSidebar" class="logout-btn">
+        <span class="icon">🚪</span>
+        <span>Logout</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+    <header class="top-bar">
+      <h1 id="pageTitle">Dashboard</h1>
+      <div class="top-bar-actions">
+        <button class="btn-icon" title="Refresh">🔄</button>
+        <button class="btn-icon" title="Settings">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Dashboard Page -->
+    <div id="dashboardPage" class="page active">
+      <div class="dashboard-grid">
+        <!-- Statistics Cards -->
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info">
+            <h3 id="totalStudents">0</h3>
+            <p>Total Students</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">📚</div>
+          <div class="stat-info">
+            <h3 id="totalCourses">0</h3>
+            <p>Total Courses</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">👨‍🏫</div>
+          <div class="stat-info">
+            <h3 id="totalTeachers">0</h3>
+            <p>Total Teachers</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">🏫</div>
+          <div class="stat-info">
+            <h3 id="totalClasses">0</h3>
+            <p>Total Classes</p>
+          </div>
+        </div>
+
+        <!-- Recent Students Widget -->
+        <div class="widget">
+          <div class="widget-header">
+            <h3>📋 Recent Students</h3>
+            <button class="widget-close">✕</button>
+          </div>
+          <div class="widget-body">
+            <table class="widget-table">
+              <thead>
+                <tr>
+                  <th>Reg No</th>
+                  <th>Name</th>
+                  <th>Course</th>
+                </tr>
+              </thead>
+              <tbody id="recentStudentsTable">
+                <tr><td colspan="3">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Student Registration Trends -->
+        <div class="widget">
+          <div class="widget-header">
+            <h3>📈 Registration by Course</h3>
+            <button class="widget-close">✕</button>
+          </div>
+          <div class="widget-body">
+            <div id="courseTrends"></div>
+          </div>
+        </div>
+
+        <!-- Upcoming Events/Birthdays -->
+        <div class="widget">
+          <div class="widget-header">
+            <h3>🎂 Student Birthdays This Week</h3>
+            <button class="widget-close">✕</button>
+          </div>
+          <div class="widget-body">
+            <p id="birthdayList">No birthdays this week</p>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="widget">
+          <div class="widget-header">
+            <h3>⚡ Quick Actions</h3>
+          </div>
+          <div class="widget-body quick-actions">
+            <button class="action-btn" onclick="showPage('students')">➕ Add Student</button>
+            <button class="action-btn" onclick="showPage('courses')">➕ Add Course</button>
+            <button class="action-btn" onclick="showPage('enrollment')">📝 New Enrollment</button>
+            <button class="action-btn" onclick="showPage('queries')">🔍 Run Queries</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Other Pages (Students, Courses, etc.) -->
+    <!-- Will be loaded dynamically via AJAX or inline -->
+    <div id="studentsPage" class="page">
+      <h2>Students Management</h2>
+      <p>Loading students page...</p>
+    </div>
+
+    <div id="coursesPage" class="page">
+      <h2>Courses Management</h2>
+      <p>Loading courses page...</p>
+    </div>
+
+    <div id="teachersPage" class="page">
+      <h2>Teachers Management</h2>
+      <p>Loading teachers page...</p>
+    </div>
+
+    <div id="classesPage" class="page">
+      <h2>Classes Management</h2>
+      <p>Loading classes page...</p>
+    </div>
+
+    <div id="enrollmentPage" class="page">
+      <h2>Enrollment Management</h2>
+      <p>Loading enrollment page...</p>
+    </div>
+
+    <div id="resultsPage" class="page">
+      <h2>Results Management</h2>
+      <p>Loading results page...</p>
+    </div>
+
+    <div id="attendancePage" class="page">
+      <h2>Attendance Management</h2>
+      <p>Loading attendance page...</p>
+    </div>
+
+    <!-- MongoDB Queries Page -->
+    <div id="queriesPage" class="page">
+      <h2>MongoDB Query Builder</h2>
+      <div class="query-builder">
+        <div class="query-section">
+          <h3>🔍 Comparison Operators</h3>
+          <div class="query-controls">
+            <label>Find students where:</label>
+            <select id="comparisonField">
+              <option value="age">Age</option>
+              <option value="gender">Gender</option>
+            </select>
+            <select id="comparisonOp">
+              <option value="$eq">Equal (=)</option>
+              <option value="$ne">Not Equal (≠)</option>
+              <option value="$gt">Greater Than (>)</option>
+              <option value="$lt">Less Than (<)</option>
+              <option value="$gte">Greater or Equal (≥)</option>
+              <option value="$lte">Less or Equal (≤)</option>
+            </select>
+            <input type="text" id="comparisonValue" placeholder="Value">
+            <button onclick="runComparisonQuery()">Run Query</button>
+          </div>
+          <div id="comparisonResults" class="query-results"></div>
+        </div>
+
+        <div class="query-section">
+          <h3>🔗 Logical Operators</h3>
+          <div class="query-controls">
+            <label>Combine conditions with:</label>
+            <select id="logicalOp">
+              <option value="$and">AND - All conditions must match</option>
+              <option value="$or">OR - Any condition must match</option>
+              <option value="$nor">NOR - None must match</option>
+            </select>
+            <button onclick="runLogicalQuery()">Run Query</button>
+          </div>
+          <div id="logicalResults" class="query-results"></div>
+        </div>
+
+        <div class="query-section">
+          <h3>📊 Sorting & Limiting</h3>
+          <div class="query-controls">
+            <label>Sort by:</label>
+            <select id="sortField">
+              <option value="name">Name</option>
+              <option value="age">Age</option>
+              <option value="registrationNo">Registration No</option>
+            </select>
+            <select id="sortOrder">
+              <option value="1">Ascending</option>
+              <option value="-1">Descending</option>
+            </select>
+            <label>Limit:</label>
+            <input type="number" id="limitValue" value="5" min="1" max="100">
+            <button onclick="runSortQuery()">Run Query</button>
+          </div>
+          <div id="sortResults" class="query-results"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script src="app-dashboard.js"></script>
+  <script>
+    // Dashboard-specific JavaScript
+    // Navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const page = e.currentTarget.dataset.page;
+        showPage(page);
+        
+        // Update active state
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+      });
+    });
+
+    function showPage(pageName) {
+      // Hide all pages
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      
+      // Show selected page
+      const page = document.getElementById(pageName + 'Page');
+      if (page) {
+        page.classList.add('active');
+        document.getElementById('pageTitle').textContent = pageName.charAt(0).toUpperCase() + pageName.slice(1);
+      }
+    }
+
+    // Load dashboard stats on page load
+    async function loadDashboardStats() {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        
+        const [students, courses, teachers, classes] = await Promise.all([
+          fetch('/api/students', { headers }).then(r => r.ok ? r.json() : []),
+          fetch('/api/courses', { headers }).then(r => r.ok ? r.json() : []),
+          fetch('/api/teachers', { headers }).then(r => r.ok ? r.json() : []),
+          fetch('/api/classes', { headers }).then(r => r.ok ? r.json() : [])
+        ]);
+
+        document.getElementById('totalStudents').textContent = students.length || 0;
+        document.getElementById('totalCourses').textContent = courses.length || 0;
+        document.getElementById('totalTeachers').textContent = teachers.length || 0;
+        document.getElementById('totalClasses').textContent = classes.length || 0;
+
+        // Load recent students
+        const tbody = document.getElementById('recentStudentsTable');
+        if (students.length > 0) {
+          tbody.innerHTML = students.slice(0, 5).map(s => `
+            <tr>
+              <td>${s.registrationNo || 'N/A'}</td>
+              <td>${s.name || 'N/A'}</td>
+              <td>${(s.course_ids || []).join(', ') || 'None'}</td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = '<tr><td colspan="3">No students yet</td></tr>';
+        }
+      } catch (err) {
+        console.error('Error loading dashboard:', err);
+      }
+    }
+
+    // Widget close buttons
+    document.querySelectorAll('.widget-close').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.target.closest('.widget').style.display = 'none';
+      });
+    });
+
+    // Load dashboard when page loads
+    if (document.getElementById('dashboardPage').classList.contains('active')) {
+      loadDashboardStats();
+    }
+
+    // Logout
+    document.getElementById('logoutBtnSidebar')?.addEventListener('click', () => {
+      if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('token');
+        window.location.reload();
+      }
+    });
+  </script>
+</body>
+</html>

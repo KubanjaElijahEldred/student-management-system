@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Student Management Dashboard v2.7</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+  <link rel="stylesheet" href="style.css?v=2.7">
+</head>
+<body style="margin:0;padding:0;">
+  <script>
+    console.log('🚀 SCRIPT LOADING...');
+    
+    // Check if user is already logged in
+    const token = localStorage.getItem('token');
+    if (token) {
+      console.log('✅ User already logged in with token');
+    } else {
+      console.log('⚠️ No token found - user needs to login');
+    }
+    
+    // Define showAuthTab IMMEDIATELY so onclick handlers work
+    window.showAuthTab = function(tab) {
+      const loginForm = document.getElementById('loginForm');
+      const signupForm = document.getElementById('signupForm');
+      const tabs = document.querySelectorAll('.auth-tab');
+      
+      if (!loginForm || !signupForm) return;
+      
+      tabs.forEach(t => t.classList.remove('active'));
+      
+      if (tab === 'login') {
+        loginForm.style.display = 'block';
+        signupForm.style.display = 'none';
+        if (tabs[0]) tabs[0].classList.add('active');
+      } else {
+        loginForm.style.display = 'none';
+        signupForm.style.display = 'block';
+        if (tabs[1]) tabs[1].classList.add('active');
+      }
+    };
+    
+    // Define showPage function for navigation
+    window.showPage = function(pageName) {
+      console.log('📄 Navigating to page:', pageName);
+      
+      // Hide all pages
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      
+      // Show selected page
+      const page = document.getElementById(pageName + 'Page');
+      if (page) {
+        page.classList.add('active');
+        console.log('✅ Page activated:', pageName);
+        
+        // Update sidebar active state
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        const activeNav = document.querySelector(`.nav-item[data-page="${pageName}"]`);
+        if (activeNav) activeNav.classList.add('active');
+        
+        // Load data for the specific page
+        setTimeout(() => {
+          switch(pageName) {
+            case 'dashboard':
+              if (window.loadDashboardStats) window.loadDashboardStats();
+              break;
+            case 'students':
+              if (window.loadStudents) window.loadStudents();
+              break;
+            case 'courses':
+              if (window.loadCourses) window.loadCourses();
+              break;
+            case 'teachers':
+              if (window.loadTeachers) window.loadTeachers();
+              break;
+            case 'classes':
+              if (window.loadClasses) window.loadClasses();
+              break;
+            case 'enrollment':
+              if (window.loadEnrollments) window.loadEnrollments();
+              break;
+            case 'results':
+              if (window.loadResults) window.loadResults();
+              break;
+            case 'attendance':
+              if (window.loadAttendance) window.loadAttendance();
+              break;
+            case 'payments':
+              if (window.loadPayments) window.loadPayments();
+              break;
+            case 'examPasses':
+              if (window.loadExamPasses) window.loadExamPasses();
+              break;
+          }
+        }, 100);
+      }
+    };
+    
+    console.log('✅ showPage defined:', typeof window.showPage);
+    console.log('✅ showAuthTab defined:', typeof window.showAuthTab);
+    
+    // Define toggleTheme globally for onclick handler
+    window.toggleTheme = function() {
+      const body = document.body;
+      const themeToggle = document.getElementById('themeToggle');
+      
+      body.classList.toggle('dark-theme');
+      
+      if (body.classList.contains('dark-theme')) {
+        if (themeToggle) themeToggle.textContent = '☀️';
+        localStorage.setItem('theme', 'dark');
+        console.log('🌙 Dark theme enabled');
+      } else {
+        if (themeToggle) themeToggle.textContent = '🌙';
+        localStorage.setItem('theme', 'light');
+        console.log('☀️ Light theme enabled');
+      }
+    };
+    
+    // Load saved theme on page load
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.body.classList.add('dark-theme');
+      console.log('🌙 Dark theme loaded from storage');
+    }
+  </script>
+  
+  <!-- Auth Page (Shows before login) -->
+  <div id="authPageContainer" class="auth-page-container" style="display: flex !important; position: fixed; inset: 0; z-index: 9999;">
+    <div class="auth-box">
+      <h1>📚 Student Management System</h1>
+      <p>Please login to continue</p>
+      
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="showAuthTab('login')">Login</button>
+        <button class="auth-tab" onclick="showAuthTab('signup')">Sign Up</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" class="auth-form" method="POST" action="javascript:void(0);">
+        <h2>Login</h2>
+        <p id="loginMsg" style="color: #00BCD4; margin: 0 0 10px 0; min-height: 20px;"></p>
+        <input type="email" name="email" placeholder="Email" required autocomplete="email">
+        <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
+        <button type="submit">Login</button>
+      </form>
+
+      <!-- Signup Form -->
+      <form id="signupForm" class="auth-form" method="POST" action="javascript:void(0);" style="display: none;">
+        <h2>Create Account</h2>
+        <p id="signupMsg" style="color: #00BCD4; margin: 0 0 10px 0; min-height: 20px;"></p>
+        <input type="text" name="name" placeholder="Name" required autocomplete="name">
+        <input type="email" name="email" placeholder="Email" required autocomplete="email">
+        <input type="password" name="password" placeholder="Password" required autocomplete="new-password">
+        <select name="role" required>
+          <option value="">Select Role</option>
+          <option value="student">Student</option>
+          <option value="teacher">Teacher</option>
+          <option value="admin">Admin</option>
+        </select>
+        <input type="file" name="photo" accept="image/*">
+        <button type="submit">Sign Up</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sidebar Navigation (Hidden until login) -->
+  <aside class="sidebar" id="mainSidebar" style="display: none;">
+    <div class="sidebar-header">
+      <div class="logo">
+        <h2>📚 SMS</h2>
+        <p>Student Management</p>
+      </div>
+      <div class="user-profile" id="sidebarProfile">
+        <img id="sidebarPhoto" src="" alt="User" class="profile-img">
+        <div class="profile-info">
+          <span id="sidebarName" class="profile-name">Guest</span>
+          <span id="sidebarRole" class="profile-role">Not logged in</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="dashboard" onclick="event.preventDefault(); showPage('dashboard');">
+        <span class="icon">🏠</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-page="students" onclick="event.preventDefault(); showPage('students');">
+        <span class="icon">👥</span>
+        <span>Students</span>
+      </a>
+      <a href="#" class="nav-item" data-page="courses" onclick="event.preventDefault(); showPage('courses');">
+        <span class="icon">📚</span>
+        <span>Courses</span>
+      </a>
+      <a href="#" class="nav-item" data-page="teachers" onclick="event.preventDefault(); showPage('teachers');">
+        <span class="icon">👨‍🏫</span>
+        <span>Teachers</span>
+      </a>
+      <a href="#" class="nav-item" data-page="classes" onclick="event.preventDefault(); showPage('classes');">
+        <span class="icon">🎓</span>
+        <span>Classes</span>
+      </a>
+      <a href="#" class="nav-item" data-page="enrollment" onclick="event.preventDefault(); showPage('enrollment');">
+        <span class="icon">📝</span>
+        <span>Enrollment</span>
+      </a>
+      <a href="#" class="nav-item" data-page="results" onclick="event.preventDefault(); showPage('results');">
+        <span class="icon">📊</span>
+        <span>Results</span>
+      </a>
+      <a href="#" class="nav-item" data-page="attendance" onclick="event.preventDefault(); showPage('attendance');">
+        <span class="icon">✅</span>
+        <span>Attendance</span>
+      </a>
+      <a href="#" class="nav-item" data-page="queries" onclick="event.preventDefault(); showPage('queries');">
+        <span class="icon">🔍</span>
+        <span>Queries</span>
+      </a>
+      <a href="#" class="nav-item" data-page="payments" onclick="event.preventDefault(); showPage('payments');">
+        <span class="icon">💳</span>
+        <span>Payments</span>
+      </a>
+      <a href="#" class="nav-item" data-page="examPasses" onclick="event.preventDefault(); showPage('examPasses');">
+        <span class="icon">🎫</span>
+        <span>Exam Passes</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button id="logoutBtn" class="logout-btn">
+        <span class="icon">🚪</span>
+        <span>Logout</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area (Hidden until login) -->
+  <main class="main-content" id="mainContent" style="display: none;">
+    <header class="top-bar">
+      <h1 id="pageTitle">Dashboard</h1>
+      <div class="top-bar-actions">
+        <button id="themeToggle" class="btn-icon" title="Toggle Dark/Light Theme" onclick="toggleTheme()">🌙</button>
+        <button class="btn-icon" title="Refresh" onclick="location.reload()">🔄</button>
+        <button class="btn-icon" title="Settings">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Dashboard Page -->
+    <div id="dashboardPage" class="page active">
+      <div class="dashboard-grid">
+        <!-- Statistics Cards -->
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info">
+            <h3 id="totalStudents">0</h3>
+            <p>Total Students</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">📚</div>
+          <div class="stat-info">
+            <h3 id="totalCourses">0</h3>
+            <p>Total Courses</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">👨‍🏫</div>
+          <div class="stat-info">
+            <h3 id="totalTeachers">0</h3>
+            <p>Total Teachers</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">🏫</div>
+          <div class="stat-info">
+            <h3 id="totalClasses">0</h3>
+            <p>Total Classes</p>
+          </div>
+        </div>
+
+        <!-- Recent Students Widget -->
+        <div class="widget">
+          <div class="widget-header">
+            <h3>📋 Recent Students</h3>
+            <button class="widget-close">✕</button>
+          </div>
+          <div class="widget-body">
+            <table class="widget-table">
+              <thead>
+                <tr>
+                  <th>Reg No</th>
+                  <th>Name</th>
+                  <th>Course</th>
+                </tr>
+              </thead>
+              <tbody id="recentStudentsTable">
+                <tr><td colspan="3">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Student Registration Trends -->
+        <div class="widget">
+          <div class="widget-header">
+            <h3>📈 Registration by Course</h3>
+            <button class="widget-close">✕</button>
+          </div>
+          <div class="widget-body">
+            <div id="courseTrends"></div>
+          </div>
+        </div>
+
+        <!-- Upcoming Events/Birthdays -->
+        <div class="widget">
+          <div class="widget-header">
+            <h3>🎂 Student Birthdays This Week</h3>
+            <button class="widget-close">✕</button>
+          </div>
+          <div class="widget-body">
+            <p id="birthdayList">No birthdays this week</p>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="widget">
+          <div class="widget-header">
+            <h3>⚡ Quick Actions</h3>
+          </div>
+          <div class="widget-body quick-actions">
+            <button class="action-btn" onclick="showPage('students')">➕ Add Student</button>
+            <button class="action-btn" onclick="showPage('courses')">➕ Add Course</button>
+            <button class="action-btn" onclick="showPage('enrollment')">📝 New Enrollment</button>
+            <button class="action-btn" onclick="showPage('queries')">🔍 Run Queries</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Extra content to test scrolling -->
+      <div class="dashboard-grid" style="margin-top: 20px;">
+        <div class="stat-card">
+          <h4>Total Enrollments</h4>
+          <p id="totalEnrollments" style="font-size: 32px; font-weight: bold; color: var(--primary-color);">0</p>
+        </div>
+        <div class="stat-card">
+          <h4>Total Results</h4>
+          <p id="totalResults" style="font-size: 32px; font-weight: bold; color: var(--primary-color);">0</p>
+        </div>
+        <div class="stat-card">
+          <h4>Attendance Records</h4>
+          <p id="totalAttendance" style="font-size: 32px; font-weight: bold; color: var(--primary-color);">0</p>
+        </div>
+        <div class="stat-card">
+          <h4>Active Users</h4>
+          <p style="font-size: 32px; font-weight: bold; color: var(--primary-color);">1</p>
+        </div>
+      </div>
+      
+      <div style="margin-top: 30px; padding: 20px; background: var(--card-bg); border-radius: 12px;">
+        <h3>📊 System Statistics</h3>
+        <p style="color: var(--text-secondary); margin-top: 10px;">
+          Welcome to the Student Management System dashboard. Scroll down to see more widgets and information.
+        </p>
+        <br>
+        <p style="color: var(--text-secondary);">
+          This page should be scrollable. If you can see this text and can scroll further down, then scrolling is working correctly!
+        </p>
+      </div>
+    </div>
+
+    <!-- Students Page -->
+    <div id="studentsPage" class="page">
+      <h2>Students Management</h2>
+      
+      <div class="form-section">
+        <h3>Add New Student</h3>
+        <form id="addStudentForm">
+          <input type="hidden" name="_id">
+          <input type="text" name="name" placeholder="Name" required>
+          <input type="number" name="age" placeholder="Age">
+          <select name="gender">
+            <option value="">Select Gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+          <input type="text" name="course_ids" placeholder="Course IDs (comma-separated, e.g. 101,102)">
+          <input type="file" name="photo" accept="image/*" id="studentPhotoFile">
+          <input type="hidden" id="studentPhotoData" name="photoData">
+          <button type="button" onclick="openCamera('student')">📷 Use Camera</button>
+          <button type="button" id="captureStudentBtn" onclick="capturePhoto('student')" style="display:none;">📸 Capture</button>
+          <button type="button" id="closeStudentCameraBtn" onclick="closeCamera('student')" style="display:none;">❌ Close Camera</button>
+          <video id="studentCamera" autoplay playsinline style="display:none; width:100%; max-width:400px; background:#000; margin:10px 0; border-radius:8px;"></video>
+          <canvas id="studentSnapshot" style="display:none; width:100%; max-width:400px; margin:10px 0; border-radius:8px;"></canvas>
+          <button type="submit">Add Student</button>
+        </form>
+      </div>
+
+      <div class="form-section">
+        <h3>Students List</h3>
+        <table id="studentsTable" class="widget-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th>Photo</th>
+              <th>Registration No</th>
+              <th>Name</th>
+              <th>Age</th>
+              <th>Gender</th>
+              <th>Course IDs</th>
+              <th>Courses</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="8">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Courses Page -->
+    <div id="coursesPage" class="page">
+      <h2>Courses Management</h2>
+      
+      <div class="form-section">
+        <h3>Add New Course</h3>
+        <form id="addCourseForm">
+          <input type="hidden" name="_id">
+          <input type="number" name="_id" placeholder="Course ID (e.g. 101)" required>
+          <input type="text" name="code" placeholder="Course Code (3 letters, e.g. BSE)" required maxlength="3" style="text-transform: uppercase;">
+          <input type="text" name="name" placeholder="Course Name" required>
+          <input type="text" name="teacher_id" placeholder="Teacher ID or Name (optional)">
+          <button type="submit">Add Course</button>
+        </form>
+      </div>
+
+      <div class="form-section">
+        <h3>Courses List</h3>
+        <table id="coursesTable" class="widget-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Teacher</th>
+              <th>Credits</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="6">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Teachers Page -->
+    <div id="teachersPage" class="page">
+      <h2>Teachers Management</h2>
+      
+      <div class="form-section">
+        <h3>Add New Teacher</h3>
+        <form id="addTeacherForm">
+          <input type="hidden" name="_id">
+          <input type="text" name="name" placeholder="Name" required>
+          <input type="text" name="subject" placeholder="Subject">
+          <input type="file" name="photo" accept="image/*" id="teacherPhotoFile">
+          <input type="hidden" id="teacherPhotoData" name="photoData">
+          <button type="button" onclick="openCamera('teacher')">📷 Use Camera</button>
+          <button type="button" id="captureTeacherBtn" onclick="capturePhoto('teacher')" style="display:none;">📸 Capture</button>
+          <button type="button" id="closeTeacherCameraBtn" onclick="closeCamera('teacher')" style="display:none;">❌ Close Camera</button>
+          <video id="teacherCamera" autoplay playsinline style="display:none; width:100%; max-width:400px; background:#000; margin:10px 0; border-radius:8px;"></video>
+          <canvas id="teacherSnapshot" style="display:none; width:100%; max-width:400px; margin:10px 0; border-radius:8px;"></canvas>
+          <button type="submit">Add Teacher</button>
+        </form>
+      </div>
+
+      <div class="form-section">
+        <h3>Teachers List</h3>
+        <table id="teachersTable" class="widget-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th>Photo</th>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Subject</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Classes Page -->
+    <div id="classesPage" class="page">
+      <h2>Classes Management</h2>
+      
+      <div class="form-section">
+        <h3>Create New Class</h3>
+        <form id="addClassForm">
+          <input type="text" name="name" placeholder="Class Name" required>
+          <input type="text" name="department" placeholder="Department">
+          <input type="number" name="year" placeholder="Year">
+          <input type="text" name="section" placeholder="Section">
+          <button type="submit">Create Class</button>
+        </form>
+      </div>
+
+      <div class="form-section">
+        <h3>Classes List</h3>
+        <table id="classesTable" class="widget-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Department</th>
+              <th>Year</th>
+              <th>Section</th>
+              <th>Members</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="6">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Enrollment Page -->
+    <div id="enrollmentPage" class="page">
+      <h2>Enrollment Management</h2>
+      
+      <div class="form-section">
+        <h3>Add New Enrollment</h3>
+        <form id="addEnrollmentForm">
+          <label style="display:block; margin-bottom:5px; font-weight:600;">Student (Name or Reg No)</label>
+          <input type="text" name="student_id" list="dlStudents" placeholder="Type student name or registration number" required style="width:100%; padding:10px; margin-bottom:15px;">
+          <label style="display:block; margin-bottom:5px; font-weight:600;">Semester</label>
+          <input type="text" name="semester" placeholder="e.g., Fall 2025 or 2025" required style="width:100%; padding:10px; margin-bottom:15px;">
+          <label style="display:block; margin-bottom:5px; font-weight:600;">Course IDs</label>
+          <input type="text" name="course_ids" placeholder="e.g., 101, 102 or Math, Science" style="width:100%; padding:10px; margin-bottom:15px;">
+          <select name="status">
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <button type="submit">Add Enrollment</button>
+        </form>
+      </div>
+
+      <div class="form-section">
+        <h3>Enrollments List</h3>
+        <table id="enrollmentsTable" class="widget-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th>Reg No</th>
+              <th>Student Name</th>
+              <th>Semester</th>
+              <th>Courses</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="6">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Results Page -->
+    <div id="resultsPage" class="page">
+      <h2>Automatic Grading System - 8 Subjects</h2>
+      
+      <div class="form-section">
+        <h3>Add Student Result (8 Subjects)</h3>
+        <form id="addResultForm" style="max-width: 900px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+            <div>
+              <label>Student ID or Name:</label>
+              <input type="text" name="student_id" placeholder="Student ID or Name" required>
+            </div>
+            <div>
+              <label>Academic Year:</label>
+              <input type="text" name="academicYear" placeholder="e.g., 2024/2025" required>
+            </div>
+            <div style="grid-column: span 2;">
+              <label>Semester:</label>
+              <input type="text" name="semester" placeholder="e.g., Semester 1, Year 1" required>
+            </div>
+          </div>
+          
+          <h4 style="margin-top: 20px; margin-bottom: 10px; color: #333;">📚 Enter Marks for 8 Subjects (0-100):</h4>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px;">
+            <div>
+              <label>Subject 1:</label>
+              <input type="text" name="subject1_name" placeholder="Subject name (e.g., Mathematics)" required>
+              <input type="number" name="subject1_marks" placeholder="Marks (0-100)" min="0" max="100" required>
+            </div>
+            <div>
+              <label>Subject 2:</label>
+              <input type="text" name="subject2_name" placeholder="Subject name (e.g., English)" required>
+              <input type="number" name="subject2_marks" placeholder="Marks (0-100)" min="0" max="100" required>
+            </div>
+            <div>
+              <label>Subject 3:</label>
+              <input type="text" name="subject3_name" placeholder="Subject name (e.g., Science)" required>
+              <input type="number" name="subject3_marks" placeholder="Marks (0-100)" min="0" max="100" required>
+            </div>
+            <div>
+              <label>Subject 4:</label>
+              <input type="text" name="subject4_name" placeholder="Subject name (e.g., History)" required>
+              <input type="number" name="subject4_marks" placeholder="Marks (0-100)" min="0" max="100" required>
+            </div>
+            <div>
+              <label>Subject 5:</label>
+              <input type="text" name="subject5_name" placeholder="Subject name (e.g., Geography)" required>
+              <input type="number" name="subject5_marks" placeholder="Marks (0-100)" min="0" max="100" required>
+            </div>
+            <div>
+              <label>Subject 6:</label>
+              <input type="text" name="subject6_name" placeholder="Subject name (e.g., Physics)" required>
+              <input type="number" name="subject6_marks" placeholder="Marks (0-100)" min="0" max="100" required>
+            </div>
+            <div>
+              <label>Subject 7:</label>
+              <input type="text" name="subject7_name" placeholder="Subject name (e.g., Chemistry)" required>
+              <input type="number" name="subject7_marks" placeholder="Marks (0-100)" min="0" max="100" required>
+            </div>
+            <div>
+              <label>Subject 8:</label>
+              <input type="text" name="subject8_name" placeholder="Subject name (e.g., Biology)" required>
+              <input type="number" name="subject8_marks" placeholder="Marks (0-100)" min="0" max="100" required>
+            </div>
+          </div>
+          
+          <div style="background: #f0f8ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+            <p style="margin: 5px 0; font-weight: bold;">ℹ️ Grading Scale:</p>
+            <p style="margin: 5px 0; font-size: 0.9em;">A+ (90-100) | A (80-89) | B+ (75-79) | B (70-74) | C+ (65-69) | C (60-64) | D+ (55-59) | D (50-54) | E (40-49) | F (<40)</p>
+            <p style="margin: 5px 0; font-size: 0.9em;">Pass Status: All subjects must be ≥ 40 marks</p>
+          </div>
+          
+          <button type="submit" style="width: 100%; padding: 12px; font-size: 16px;">🎓 Submit & Calculate Grades Automatically</button>
+        </form>
+      </div>
+
+      <div class="form-section">
+        <h3>Student Results List</h3>
+        <table id="resultsTable" class="widget-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Semester</th>
+              <th>Academic Year</th>
+              <th>Total Marks</th>
+              <th>Average</th>
+              <th>Grade</th>
+              <th>GPA</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="9">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Attendance Page -->
+    <div id="attendancePage" class="page">
+      <h2>Attendance Management</h2>
+      
+      <div class="form-section">
+        <h3>Record Attendance</h3>
+        <form id="addAttendanceForm">
+          <input type="date" name="date" required>
+          <input type="text" name="student_id" placeholder="Student ID" required>
+          <input type="number" name="course_id" placeholder="Course ID">
+          <select name="present">
+            <option value="true">Present</option>
+            <option value="false">Absent</option>
+          </select>
+          <button type="submit">Record Attendance</button>
+        </form>
+      </div>
+
+      <div class="form-section">
+        <h3>Attendance Records</h3>
+        <table id="attendanceTable" class="widget-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Student</th>
+              <th>Course</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MongoDB Queries Page -->
+    <div id="queriesPage" class="page">
+      <h2>MongoDB Query Builder</h2>
+      <div class="query-builder">
+        <div class="query-section">
+          <h3>🔍 Comparison Operators</h3>
+          <div class="query-controls">
+            <label>Find students where:</label>
+            <select id="comparisonField">
+              <option value="age">Age</option>
+              <option value="gender">Gender</option>
+            </select>
+            <select id="comparisonOp">
+              <option value="$eq">Equal (=)</option>
+              <option value="$ne">Not Equal (≠)</option>
+              <option value="$gt">Greater Than (>)</option>
+              <option value="$lt">Less Than (<)</option>
+              <option value="$gte">Greater or Equal (≥)</option>
+              <option value="$lte">Less or Equal (≤)</option>
+            </select>
+            <input type="text" id="comparisonValue" placeholder="Value">
+            <button onclick="runComparisonQuery()">Run Query</button>
+          </div>
+          <div id="comparisonResults" class="query-results"></div>
+        </div>
+
+        <div class="query-section">
+          <h3>🔗 Logical Operators</h3>
+          <div class="query-controls">
+            <label>Combine conditions with:</label>
+            <select id="logicalOp">
+              <option value="$and">AND - All conditions must match</option>
+              <option value="$or">OR - Any condition must match</option>
+              <option value="$nor">NOR - None must match</option>
+            </select>
+            <button onclick="runLogicalQuery()">Run Query</button>
+          </div>
+          <div id="logicalResults" class="query-results"></div>
+        </div>
+
+        <div class="query-section">
+          <h3>📊 Sorting & Limiting</h3>
+          <div class="query-controls">
+            <label>Sort by:</label>
+            <select id="sortField">
+              <option value="name">Name</option>
+              <option value="age">Age</option>
+              <option value="registrationNo">Registration No</option>
+            </select>
+            <select id="sortOrder">
+              <option value="1">Ascending</option>
+              <option value="-1">Descending</option>
+            </select>
+            <label>Limit:</label>
+            <input type="number" id="limitValue" value="5" min="1" max="100">
+            <button onclick="runSortQuery()">Run Query</button>
+          </div>
+          <div id="sortResults" class="query-results"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payments Page -->
+    <div id="paymentsPage" class="page">
+      <h2>💳 Payment Management - Financial Department</h2>
+      
+      <div class="form-section">
+        <h3>Submit New Payment</h3>
+        <form id="addPaymentForm" style="max-width: 800px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label>Student ID or Name:</label>
+              <input type="text" name="student_id" placeholder="Student ID or Name" required list="dlStudents">
+            </div>
+            <div>
+              <label>Payment Type:</label>
+              <select name="paymentType" required>
+                <option value="">Select Type</option>
+                <option value="Tuition Fee">Tuition Fee</option>
+                <option value="Exam Fee">Exam Fee</option>
+                <option value="Registration Fee">Registration Fee</option>
+                <option value="Library Fee">Library Fee</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label>Amount:</label>
+              <input type="number" name="amount" placeholder="Amount" required min="0" step="0.01">
+            </div>
+            <div>
+              <label>Payment Method:</label>
+              <select name="paymentMethod" required>
+                <option value="">Select Method</option>
+                <option value="Cash">Cash</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Mobile Money">Mobile Money</option>
+                <option value="Cheque">Cheque</option>
+                <option value="Online Payment">Online Payment</option>
+              </select>
+            </div>
+            <div>
+              <label>Semester:</label>
+              <input type="text" name="semester" placeholder="e.g., Semester 1, Year 1" required>
+            </div>
+            <div>
+              <label>Academic Year:</label>
+              <input type="text" name="academicYear" placeholder="e.g., 2024/2025" required>
+            </div>
+            <div style="grid-column: span 2;">
+              <label>Transaction Reference (Optional):</label>
+              <input type="text" name="transactionReference" placeholder="Transaction/Receipt reference">
+            </div>
+            <div style="grid-column: span 2;">
+              <label>Description (Optional):</label>
+              <textarea name="description" placeholder="Additional notes" rows="2"></textarea>
+            </div>
+          </div>
+          <button type="submit" style="width: 100%; margin-top: 15px; padding: 12px;">💰 Submit Payment</button>
+        </form>
+      </div>
+
+      <div class="form-section">
+        <h3>Pending Payments (Requires Confirmation)</h3>
+        <div style="margin-bottom: 15px;">
+          <button onclick="filterPayments('Pending')" style="margin-right: 10px;">🟡 Pending</button>
+          <button onclick="filterPayments('Confirmed')" style="margin-right: 10px;">🟢 Confirmed</button>
+          <button onclick="filterPayments('Rejected')" style="margin-right: 10px;">🔴 Rejected</button>
+          <button onclick="filterPayments('All')">📋 All</button>
+        </div>
+        <table id="paymentsTable" class="widget-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th>Receipt #</th>
+              <th>Student</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Status</th>
+              <th>Exam Pass #</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="9">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Exam Passes Page -->
+    <div id="examPassesPage" class="page">
+      <h2>🎫 Exam Pass Management</h2>
+      
+      <div class="form-section">
+        <h3>Verify Exam Pass</h3>
+        <div style="max-width: 600px;">
+          <input type="text" id="verifyPassNumber" placeholder="Enter Pass Number (e.g., EP-2025-000001)" style="width: 100%; padding: 12px; margin-bottom: 10px;">
+          <button onclick="verifyExamPass()" style="width: 100%; padding: 12px;">🔍 Verify Pass</button>
+          <div id="verifyPassResult" style="margin-top: 15px;"></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3>Active Exam Passes</h3>
+        <div style="margin-bottom: 15px;">
+          <button onclick="filterExamPasses('Active')" style="margin-right: 10px;">✅ Active</button>
+          <button onclick="filterExamPasses('Expired')" style="margin-right: 10px;">⏰ Expired</button>
+          <button onclick="filterExamPasses('Revoked')" style="margin-right: 10px;">🚫 Revoked</button>
+          <button onclick="filterExamPasses('All')">📋 All</button>
+        </div>
+        <table id="examPassesTable" class="widget-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th>Pass #</th>
+              <th>Student</th>
+              <th>Semester</th>
+              <th>Exam Type</th>
+              <th>Issue Date</th>
+              <th>Expiry Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="8">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Student Profile Modal -->
+  <div id="studentProfileModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:10000; align-items:center; justify-content:center;">
+    <div style="background:var(--card-bg); border:2px solid var(--primary-color); border-radius:12px; padding:30px; width:90%; max-width:600px; color:var(--text-primary); max-height:80vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2>Student Profile</h2>
+        <button id="closeStudentProfile" style="padding:8px 16px; background:var(--border-color); border:none; border-radius:6px; cursor:pointer;">Close</button>
+      </div>
+      <div id="studentProfileContent"></div>
+      <button id="printStudentProfile" style="margin-top:20px; padding:12px 24px; background:var(--primary-color); color:white; border:none; border-radius:6px; cursor:pointer;">Print Profile</button>
+    </div>
+  </div>
+
+  <!-- Edit Student Modal -->
+  <div id="editStudentModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:10000; align-items:center; justify-content:center;">
+    <div style="background:var(--card-bg); border:2px solid var(--primary-color); border-radius:12px; padding:30px; width:90%; max-width:800px; color:var(--text-primary); max-height:80vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2>Edit Student</h2>
+        <button id="closeEditStudent" style="padding:8px 16px; background:var(--border-color); border:none; border-radius:6px; cursor:pointer;">Close</button>
+      </div>
+      <form id="editStudentForm" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+        <input type="hidden" name="_id" id="edit_id">
+        <div>
+          <label style="display:block; margin-bottom:5px; font-weight:600;">Name</label>
+          <input name="name" id="edit_name" required style="width:100%; padding:10px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+        </div>
+        <div>
+          <label style="display:block; margin-bottom:5px; font-weight:600;">Gender</label>
+          <input name="gender" id="edit_gender" placeholder="Male/Female" style="width:100%; padding:10px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+        </div>
+        <div>
+          <label style="display:block; margin-bottom:5px; font-weight:600;">Age</label>
+          <input name="age" id="edit_age" type="number" style="width:100%; padding:10px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+        </div>
+        <div>
+          <label style="display:block; margin-bottom:5px; font-weight:600;">Course IDs (comma numbers)</label>
+          <input name="course_ids" id="edit_course_ids" placeholder="101,102" style="width:100%; padding:10px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+        </div>
+        <div style="grid-column: span 2;">
+          <label style="display:block; margin-bottom:5px; font-weight:600;">Photo (upload to replace)</label>
+          <input name="photo" id="edit_photo" type="file" accept="image/*" style="width:100%; padding:10px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg);">
+        </div>
+        <div style="grid-column: span 2; display:flex; gap:10px; justify-content:flex-end; margin-top:10px;">
+          <button type="submit" style="padding:12px 24px; background:var(--primary-color); color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">💾 Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Report Card Modal -->
+  <div id="reportCardModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:10000; overflow-y:auto; padding:20px;">
+    <div style="background:white; border-radius:12px; width:90%; max-width:900px; margin:20px auto; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-height:90vh; display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:20px; background:#00BCD4; color:white; border-radius:12px 12px 0 0; flex-shrink:0;">
+        <h2 style="margin:0; color:white;">📋 Student Report Card</h2>
+        <div style="display:flex; gap:10px;">
+          <button id="printReportCard" style="padding:10px 20px; background:white; color:#00BCD4; border:none; border-radius:6px; cursor:pointer; font-weight:600;">🖨️ Print</button>
+          <button id="closeReportCard" style="padding:10px 20px; background:#f44336; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">Close</button>
+        </div>
+      </div>
+      <div id="reportCardContent" style="padding:30px; color:#333; background:white; overflow-y:auto; flex:1;"></div>
+    </div>
+  </div>
+
+  <!-- Edit Result Modal -->
+  <div id="editResultModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:10000; align-items:center; justify-content:center; overflow-y:auto; padding:20px;">
+    <div style="background:var(--card-bg); border-radius:12px; width:90%; max-width:900px; color:var(--text-primary); max-height:90vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:20px; background:#FF9800; color:white; border-radius:12px 12px 0 0;">
+        <h2 style="margin:0; color:white;">✏️ Edit Student Result</h2>
+        <button id="closeEditResult" style="padding:10px 20px; background:#f44336; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">Close</button>
+      </div>
+      <form id="editResultForm" style="padding:30px;">
+        <input type="hidden" id="editResultId">
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+          <div>
+            <label style="display:block; margin-bottom:5px; font-weight:600;">Student:</label>
+            <input type="text" id="editResultStudent" readonly style="width:100%; padding:10px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+          </div>
+          <div>
+            <label style="display:block; margin-bottom:5px; font-weight:600;">Academic Year:</label>
+            <input type="text" id="editResultAcademicYear" placeholder="e.g., 2024/2025" required style="width:100%; padding:10px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+          </div>
+          <div style="grid-column: span 2;">
+            <label style="display:block; margin-bottom:5px; font-weight:600;">Semester:</label>
+            <input type="text" id="editResultSemester" placeholder="e.g., Semester 1, Year 1" required style="width:100%; padding:10px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+          </div>
+        </div>
+        
+        <h4 style="margin-top: 20px; margin-bottom: 15px; color: var(--primary-color);">📚 Edit Marks for 8 Subjects:</h4>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+          <div>
+            <label style="font-weight:600;">Subject 1:</label>
+            <input type="text" id="editSubject1Name" placeholder="Subject name" required style="width:100%; padding:8px; margin-bottom:5px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+            <input type="number" id="editSubject1Marks" placeholder="Marks (0-100)" min="0" max="100" required style="width:100%; padding:8px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+          </div>
+          <div>
+            <label style="font-weight:600;">Subject 2:</label>
+            <input type="text" id="editSubject2Name" placeholder="Subject name" required style="width:100%; padding:8px; margin-bottom:5px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+            <input type="number" id="editSubject2Marks" placeholder="Marks (0-100)" min="0" max="100" required style="width:100%; padding:8px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+          </div>
+          <div>
+            <label style="font-weight:600;">Subject 3:</label>
+            <input type="text" id="editSubject3Name" placeholder="Subject name" required style="width:100%; padding:8px; margin-bottom:5px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+            <input type="number" id="editSubject3Marks" placeholder="Marks (0-100)" min="0" max="100" required style="width:100%; padding:8px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+          </div>
+          <div>
+            <label style="font-weight:600;">Subject 4:</label>
+            <input type="text" id="editSubject4Name" placeholder="Subject name" required style="width:100%; padding:8px; margin-bottom:5px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+            <input type="number" id="editSubject4Marks" placeholder="Marks (0-100)" min="0" max="100" required style="width:100%; padding:8px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+          </div>
+          <div>
+            <label style="font-weight:600;">Subject 5:</label>
+            <input type="text" id="editSubject5Name" placeholder="Subject name" required style="width:100%; padding:8px; margin-bottom:5px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+            <input type="number" id="editSubject5Marks" placeholder="Marks (0-100)" min="0" max="100" required style="width:100%; padding:8px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+          </div>
+          <div>
+            <label style="font-weight:600;">Subject 6:</label>
+            <input type="text" id="editSubject6Name" placeholder="Subject name" required style="width:100%; padding:8px; margin-bottom:5px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+            <input type="number" id="editSubject6Marks" placeholder="Marks (0-100)" min="0" max="100" required style="width:100%; padding:8px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+          </div>
+          <div>
+            <label style="font-weight:600;">Subject 7:</label>
+            <input type="text" id="editSubject7Name" placeholder="Subject name" required style="width:100%; padding:8px; margin-bottom:5px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+            <input type="number" id="editSubject7Marks" placeholder="Marks (0-100)" min="0" max="100" required style="width:100%; padding:8px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+          </div>
+          <div>
+            <label style="font-weight:600;">Subject 8:</label>
+            <input type="text" id="editSubject8Name" placeholder="Subject name" required style="width:100%; padding:8px; margin-bottom:5px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+            <input type="number" id="editSubject8Marks" placeholder="Marks (0-100)" min="0" max="100" required style="width:100%; padding:8px; border:2px solid var(--border-color); border-radius:6px; background:var(--input-bg); color:var(--text-primary);">
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 25px; padding-top: 20px; border-top: 2px solid var(--border-color);">
+          <button type="submit" style="padding: 12px 30px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 16px;">💾 Update Result</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // OLD showPage function (kept for reference, not used)
+    /*
+    function showPageOld(pageName) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const page = document.getElementById(pageName + 'Page');
+      if (page) {
+        page.classList.add('active');
+        document.getElementById('pageTitle').textContent = pageName.charAt(0).toUpperCase() + pageName.slice(1);
+      }
+      
+      switch(pageName) {
+        case 'dashboard':
+          loadDashboardStats();
+          break;
+        case 'students':
+          if (typeof loadStudents === 'function') loadStudents();
+          break;
+        case 'courses':
+          if (typeof loadCourses === 'function') loadCourses();
+          break;
+        case 'teachers':
+          if (typeof loadTeachers === 'function') loadTeachers();
+          break;
+        case 'classes':
+          if (typeof loadClasses === 'function') loadClasses();
+          break;
+        case 'enrollment':
+          if (typeof loadEnrollments === 'function') {
+            loadEnrollments();
+          } else if (typeof window.loadEnrollmentsData === 'function') {
+            window.loadEnrollmentsData();
+          }
+          break;
+        case 'results':
+          if (typeof loadResults === 'function') loadResults();
+          break;
+        case 'attendance':
+          if (typeof loadAttendance === 'function') loadAttendance();
+          break;
+      }
+    }
+    */
+    // The actual showPage function is defined in the early script block at the top of body
+
+    // Navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const page = e.currentTarget.dataset.page;
+        showPage(page);
+        
+        // Update active state
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+      });
+    });
+
+    // Load dashboard stats on page load (make it global)
+    window.loadDashboardStats = async function() {
+      console.log('📊 Loading dashboard stats...');
+      
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.warn('⚠️ No token found, cannot load dashboard stats');
+          return;
+        }
+        
+        const headers = { 'Authorization': `Bearer ${token}` };
+        
+        console.log('🔄 Fetching data from API...');
+        
+        const [students, courses, teachers, classes] = await Promise.all([
+          fetch('/api/students', { headers }).then(async r => {
+            if (!r.ok) {
+              console.error('Students fetch failed:', r.status);
+              return [];
+            }
+            const data = await r.json();
+            console.log('✅ Students loaded:', data.length);
+            return data;
+          }),
+          fetch('/api/courses', { headers }).then(async r => {
+            if (!r.ok) {
+              console.error('Courses fetch failed:', r.status);
+              return [];
+            }
+            const data = await r.json();
+            console.log('✅ Courses loaded:', data.length);
+            return data;
+          }),
+          fetch('/api/teachers', { headers }).then(async r => {
+            if (!r.ok) {
+              console.error('Teachers fetch failed:', r.status);
+              return [];
+            }
+            const data = await r.json();
+            console.log('✅ Teachers loaded:', data.length);
+            return data;
+          }),
+          fetch('/api/classes', { headers }).then(async r => {
+            if (!r.ok) {
+              console.error('Classes fetch failed:', r.status);
+              return [];
+            }
+            const data = await r.json();
+            console.log('✅ Classes loaded:', data.length);
+            return data;
+          })
+        ]);
+
+        // Update stat cards
+        const totalStudentsEl = document.getElementById('totalStudents');
+        const totalCoursesEl = document.getElementById('totalCourses');
+        const totalTeachersEl = document.getElementById('totalTeachers');
+        const totalClassesEl = document.getElementById('totalClasses');
+        
+        if (totalStudentsEl) totalStudentsEl.textContent = students.length || 0;
+        if (totalCoursesEl) totalCoursesEl.textContent = courses.length || 0;
+        if (totalTeachersEl) totalTeachersEl.textContent = teachers.length || 0;
+        if (totalClassesEl) totalClassesEl.textContent = classes.length || 0;
+        
+        console.log('✅ Stats updated:', {
+          students: students.length,
+          courses: courses.length,
+          teachers: teachers.length,
+          classes: classes.length
+        });
+
+        // Load recent students
+        const tbody = document.getElementById('recentStudentsTable');
+        if (tbody) {
+          if (students.length > 0) {
+            tbody.innerHTML = students.slice(0, 5).map(s => `
+              <tr>
+                <td>${s.registrationNo || 'N/A'}</td>
+                <td>${s.name || 'N/A'}</td>
+                <td>${(s.course_ids || []).join(', ') || 'None'}</td>
+              </tr>
+            `).join('');
+            console.log('✅ Recent students table updated');
+          } else {
+            tbody.innerHTML = '<tr><td colspan="3">No students yet</td></tr>';
+            console.log('ℹ️ No students to display');
+          }
+        }
+      } catch (err) {
+        console.error('❌ Error loading dashboard:', err);
+      }
+    };
+
+    // Widget close buttons
+    document.querySelectorAll('.widget-close').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.target.closest('.widget').style.display = 'none';
+      });
+    });
+
+    // Load dashboard when page loads
+    if (document.getElementById('dashboardPage').classList.contains('active')) {
+      loadDashboardStats();
+    }
+
+    // Auth Page Management
+    const authPageContainer = document.getElementById('authPageContainer');
+    const mainSidebar = document.getElementById('mainSidebar');
+    const mainContent = document.getElementById('mainContent');
+    
+    // Check if user is logged in on page load
+    function checkAuth() {
+      const token = localStorage.getItem('token');
+      
+      console.log('🔐 Auth Check:', token ? 'Token found - showing dashboard' : 'No token - showing auth page');
+      
+      if (token) {
+        // User is logged in - show dashboard
+        if (authPageContainer) authPageContainer.style.display = 'none';
+        if (mainSidebar) mainSidebar.style.display = 'flex';
+        if (mainContent) mainContent.style.display = 'flex';
+      } else {
+        // User not logged in - show auth page
+        if (authPageContainer) authPageContainer.style.display = 'flex';
+        if (mainSidebar) mainSidebar.style.display = 'none';
+        if (mainContent) mainContent.style.display = 'none';
+      }
+    }
+    
+    // Login Form
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.get('email'),
+            password: formData.get('password')
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          alert('Login successful!');
+          checkAuth(); // Show dashboard
+          loadDashboardStats(); // Load initial data
+        } else {
+          alert(data.error || 'Login failed');
+        }
+      } catch (err) {
+        alert('Login error: ' + err.message);
+      }
+    });
+    
+    // Signup Form
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await res.json();
+        
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          alert('Account created successfully!');
+          checkAuth(); // Show dashboard
+          loadDashboardStats(); // Load initial data
+        } else {
+          alert(data.error || 'Signup failed');
+        }
+      } catch (err) {
+        alert('Signup error: ' + err.message);
+      }
+    });
+    
+    // Run auth check on page load - wrapped in DOMContentLoaded to ensure page is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', checkAuth);
+    } else {
+      checkAuth();
+    }
+    
+    // Update logout to show auth page
+    document.getElementById('logoutBtnSidebar')?.addEventListener('click', () => {
+      if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('token');
+        checkAuth(); // Show auth page
+      }
+    });
+
+    // Update theme toggle icon after login
+    setTimeout(() => {
+      const themeToggle = document.getElementById('themeToggle');
+      const savedTheme = localStorage.getItem('theme');
+      
+      if (themeToggle && savedTheme === 'dark') {
+        themeToggle.textContent = '☀️';
+        themeToggle.title = 'Switch to Light Theme';
+      }
+      
+      console.log('✅ Theme toggle icon updated');
+    }, 500);
+  </script>
+  
+  <!-- Datalists for autocomplete -->
+  <datalist id="dlStudents"></datalist>
+  <datalist id="dlCourses"></datalist>
+  <datalist id="dlTeachers"></datalist>
+  
+  <script src="queries.js?v=2.7"></script>
+  <script src="app.js?v=2.7"></script>
+</body>
+</html>
