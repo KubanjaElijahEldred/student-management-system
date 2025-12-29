@@ -38,15 +38,63 @@ function withPhotoUrl(doc) {
 router.post('/students', authRequired, upload.single('photo'), async (req, res) => {
   try {
     const payload = req.body;
-    // Handle course_ids from FormData (comes as array of strings)
+    // Handle course_ids from FormData (comes as array of strings - MongoDB ObjectIds)
     if (payload.course_ids) {
-      if (Array.isArray(payload.course_ids)) {
-        payload.course_ids = payload.course_ids.map(id => Number(id)).filter(n => !Number.isNaN(n));
-      } else if (typeof payload.course_ids === 'string') {
-        payload.course_ids = [Number(payload.course_ids)].filter(n => !Number.isNaN(n));
+      if (!Array.isArray(payload.course_ids)) {
+        payload.course_ids = [payload.course_ids];
       }
+      // Filter out empty strings but keep as strings (they're MongoDB ObjectIds)
+      payload.course_ids = payload.course_ids.filter(id => id && String(id).trim());
     }
     if (req.file) payload.photoPath = req.file.path;
+    
+    // Auto-generate registration number if not provided
+    if (!payload.registrationNo && payload.course_ids && payload.course_ids.length > 0) {
+      try {
+        // Get the first course to determine the course code
+        const firstCourseId = payload.course_ids[0];
+        console.log('🔍 Looking up course with ID:', firstCourseId, 'Type:', typeof firstCourseId);
+        
+        // Try to find course by _id (MongoDB ObjectId)
+        let course = null;
+        try {
+          course = await Course.findById(firstCourseId);
+        } catch (e) {
+          console.log('⚠️ Course lookup by ID failed:', e.message);
+        }
+        
+        console.log('📚 Found course:', course ? `${course.name} (${course.code})` : 'NOT FOUND');
+        
+        // Use course code if found, otherwise default to 'GEN' for General
+        const courseCode = (course && course.code) ? course.code.toLowerCase() : 'gen';
+        const year = new Date().getFullYear().toString().slice(-2); // Last 2 digits of year (e.g., 25)
+        
+        // Find the highest sequential number for this course code and year
+        const regPattern = new RegExp(`^${year}/${courseCode}/\\d+$`, 'i');
+        const existingStudents = await Student.find({ 
+          registrationNo: regPattern 
+        }).sort({ registrationNo: -1 }).limit(1);
+        
+        let sequentialNumber = 1;
+        if (existingStudents.length > 0) {
+          const lastReg = existingStudents[0].registrationNo;
+          const match = lastReg.match(/\/(\d+)$/);
+          if (match) {
+            sequentialNumber = parseInt(match[1]) + 1;
+          }
+        }
+        
+        // Format: 25/bse/00001 (5 digits, zero-padded)
+        const paddedNumber = String(sequentialNumber).padStart(3, '0');
+        payload.registrationNo = `${year}/${courseCode.toUpperCase()}/${paddedNumber}`;
+        
+        console.log('✅ Generated registration number:', payload.registrationNo);
+      } catch (err) {
+        console.error('❌ Error generating registration number:', err);
+        // Continue without registration number if generation fails
+      }
+    }
+    
     const student = new Student(payload);
     await student.save();
     res.json({ success: true, student: withPhotoUrl(student) });
@@ -101,12 +149,12 @@ router.put('/students/:id', authRequired, upload.single('photo'), async (req, re
   try {
     const payload = req.body;
     if (req.file) payload.photoPath = req.file.path;
-    // Handle comma-separated course_ids to array of numbers if provided
+    // Handle comma-separated course_ids (MongoDB ObjectIds as strings)
     if (typeof payload.course_ids === 'string') {
       payload.course_ids = payload.course_ids
         .split(',')
-        .map(s => Number(String(s).trim()))
-        .filter(n => !Number.isNaN(n));
+        .map(s => String(s).trim())
+        .filter(s => s);
     }
     // Handle contact fields sent as 'contact.phone', 'contact.email', 'contact.address'
     if (payload['contact.phone'] || payload['contact.email'] || payload['contact.address']) {
@@ -200,6 +248,28 @@ router.post('/teachers', authRequired, allowRoles('admin','teacher'), upload.sin
 router.get('/teachers', authRequired, async (req, res) => {
   const teachers = await Teacher.find();
   res.json(teachers.map(withPhotoUrl));
+});
+
+router.put('/teachers/:id', authRequired, allowRoles('admin','teacher'), upload.single('photo'), async (req, res) => {
+  try {
+    const payload = req.body;
+    if (req.file) payload.photoPath = req.file.path;
+    const updated = await Teacher.findByIdAndUpdate(req.params.id, { $set: payload }, { new: true });
+    if (!updated) return res.status(404).json({ success: false, error: 'Teacher not found' });
+    res.json({ success: true, teacher: withPhotoUrl(updated) });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.delete('/teachers/:id', authRequired, allowRoles('admin'), async (req, res) => {
+  try {
+    const deleted = await Teacher.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ success: false, error: 'Teacher not found' });
+    res.json({ success: true, message: 'Teacher deleted successfully' });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
 });
 
 /* Classes */
@@ -387,6 +457,26 @@ router.get('/attendance', authRequired, async (req, res) => {
   res.json(attendance);
 });
 
+router.put('/attendance/:id', authRequired, allowRoles('admin','teacher'), async (req, res) => {
+  try {
+    const updated = await Attendance.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+    if (!updated) return res.status(404).json({ success: false, error: 'Attendance record not found' });
+    res.json({ success: true, attendance: updated });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.delete('/attendance/:id', authRequired, allowRoles('admin','teacher'), async (req, res) => {
+  try {
+    const deleted = await Attendance.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ success: false, error: 'Attendance record not found' });
+    res.json({ success: true, message: 'Attendance deleted successfully' });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
 // Attendance summary per student (optional filter by course)
 router.get('/attendance/student/:id/summary', authRequired, async (req, res) => {
   const sid = req.params.id; // Accept ObjectId as string
@@ -437,6 +527,16 @@ router.put('/enrollments/:id', authRequired, allowRoles('admin','teacher'), asyn
     const updated = await Enrollment.findByIdAndUpdate(req.params.id, { $set: payload }, { new: true });
     if (!updated) return res.status(404).json({ success: false, error: 'Not found' });
     res.json({ success: true, enrollment: updated });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.delete('/enrollments/:id', authRequired, allowRoles('admin','teacher'), async (req, res) => {
+  try {
+    const deleted = await Enrollment.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ success: false, error: 'Enrollment not found' });
+    res.json({ success: true, message: 'Enrollment deleted successfully' });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
@@ -620,6 +720,17 @@ router.post('/payments/:id/generate-exam-pass', authRequired, async (req, res) =
       examPass,
       message: 'Exam pass generated successfully'
     });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Update payment
+router.put('/payments/:id', authRequired, allowRoles('admin','teacher'), async (req, res) => {
+  try {
+    const updated = await Payment.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+    if (!updated) return res.status(404).json({ success: false, error: 'Payment not found' });
+    res.json({ success: true, payment: updated });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }

@@ -14,7 +14,7 @@ const StudentSchema = new Schema({
     email: String,
     address: String
   },
-  course_ids: [{ type: Number, ref: 'Course' }],
+  course_ids: [{ type: Schema.Types.ObjectId, ref: 'Course' }],
   courses: [String],
   photoPath: { type: String }
 }, { timestamps: true });

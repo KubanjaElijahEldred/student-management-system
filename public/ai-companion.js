@@ -339,9 +339,33 @@ function hideTypingIndicator() {
   }
 }
 
+// ULTRA-STRONG Lock mechanism for toggleAIChat
+let toggleLocked = false;
+let toggleCallCount = 0;
+let lastToggleTime = 0;
+
 // Toggle AI chat window
 window.toggleAIChat = function() {
-  console.log('🔄 Toggle AI Chat called');
+  const now = Date.now();
+  toggleCallCount++;
+  const callId = toggleCallCount;
+  
+  // DOUBLE PROTECTION: Lock + Time-based throttle
+  if (toggleLocked) {
+    console.log(`⛔ Toggle LOCKED (call #${callId} blocked)`);
+    return;
+  }
+  
+  // Minimum 800ms between toggles
+  if (now - lastToggleTime < 800) {
+    console.log(`⏱️ Too fast! Wait ${800 - (now - lastToggleTime)}ms (call #${callId} blocked)`);
+    return;
+  }
+  
+  // Lock immediately and record time
+  toggleLocked = true;
+  lastToggleTime = now;
+  console.log(`🔄 Toggle AI Chat called (call #${callId})`);
   
   const chatWindow = document.getElementById('aiChatWindow');
   const chatBtn = document.getElementById('aiChatBtn');
@@ -386,10 +410,20 @@ window.toggleAIChat = function() {
         }
       }, 300);
     }
+    
+    // Unlock after animation completes (800ms delay)
+    setTimeout(() => {
+      toggleLocked = false;
+      console.log(`🔓 Toggle unlocked (call #${callId} completed)`);
+    }, 800);
+    
   } else {
     console.error('❌ Chat elements not found!');
+    // Unlock immediately if error
+    toggleLocked = false;
   }
 };
+
 
 // Clear chat history
 window.clearAIChat = function() {
@@ -480,154 +514,6 @@ window.addEventListener('storage', (e) => {
   }
 });
 
-// Diagnostic function
-window.testAIChat = function() {
-  console.log('🔍 AI Chat Diagnostic Test');
-  console.log('========================');
-  
-  const chatWindow = document.getElementById('aiChatWindow');
-  const chatInput = document.getElementById('aiChatInput');
-  const chatBtn = document.getElementById('aiChatBtn');
-  const sendBtn = document.getElementById('aiSendBtn');
-  
-  console.log('1. Chat Window:', chatWindow ? '✅ Found' : '❌ NOT FOUND');
-  if (chatWindow) {
-    console.log('   - Display:', chatWindow.style.display);
-    console.log('   - Visibility:', window.getComputedStyle(chatWindow).visibility);
-    console.log('   - Z-index:', window.getComputedStyle(chatWindow).zIndex);
-  }
-  
-  console.log('2. Chat Input:', chatInput ? '✅ Found' : '❌ NOT FOUND');
-  if (chatInput) {
-    console.log('   - Disabled:', chatInput.disabled);
-    console.log('   - ReadOnly:', chatInput.readOnly);
-    console.log('   - Value:', chatInput.value);
-    console.log('   - Pointer Events:', window.getComputedStyle(chatInput).pointerEvents);
-    console.log('   - Cursor:', window.getComputedStyle(chatInput).cursor);
-  }
-  
-  console.log('3. Chat Button:', chatBtn ? '✅ Found' : '❌ NOT FOUND');
-  console.log('4. Send Button:', sendBtn ? '✅ Found' : '❌ NOT FOUND');
-  
-  console.log('5. Event Listeners:');
-  console.log('   - sendAIMessage:', typeof window.sendAIMessage);
-  console.log('   - toggleAIChat:', typeof window.toggleAIChat);
-  
-  console.log('\n💡 Quick Fixes:');
-  console.log('   fixAIInput() - Force enable input');
-  console.log('   toggleAIChat() - Open/close chat');
-  console.log('   testAISend("hello") - Test sending message');
-  
-  return {
-    chatWindow,
-    chatInput,
-    chatBtn,
-    sendBtn,
-    allGood: !!(chatWindow && chatInput && chatBtn && sendBtn)
-  };
-};
-
-// Quick fix function
-window.fixAIInput = function() {
-  console.log('🔧 Fixing AI input...');
-  
-  const input = document.getElementById('aiChatInput');
-  if (!input) {
-    console.error('❌ Input not found!');
-    return false;
-  }
-  
-  // Force enable
-  input.disabled = false;
-  input.readOnly = false;
-  input.style.pointerEvents = 'auto';
-  input.style.cursor = 'text';
-  
-  // Open chat window
-  const chatWindow = document.getElementById('aiChatWindow');
-  if (chatWindow) {
-    chatWindow.style.display = 'flex';
-  }
-  
-  // Focus
-  setTimeout(() => {
-    input.focus();
-    input.select();
-    console.log('✅ Input fixed and focused!');
-    console.log('Try typing now...');
-  }, 100);
-  
-  return true;
-};
-
-// Test send function
-window.testAISend = function(msg = 'test') {
-  console.log('🧪 Testing send with message:', msg);
-  const input = document.getElementById('aiChatInput');
-  if (input) {
-    input.value = msg;
-    console.log('📝 Value set to:', input.value);
-    sendAIMessage();
-  } else {
-    console.error('❌ Input not found');
-  }
-};
-
-// Force start AI - Complete initialization
-window.forceStartAI = function() {
-  console.log('🚀 FORCE STARTING AI COMPANION...');
-  console.log('================================');
-  
-  // 1. Show button
-  const btn = document.getElementById('aiChatBtn');
-  if (btn) {
-    btn.style.display = 'flex';
-    console.log('✅ Button visible');
-  } else {
-    console.error('❌ Button not found in DOM!');
-    return false;
-  }
-  
-  // 2. Initialize AI Companion
-  console.log('🔄 Initializing AI Companion...');
-  initAICompanion();
-  
-  // 3. Open chat window
-  const chatWindow = document.getElementById('aiChatWindow');
-  if (chatWindow) {
-    chatWindow.style.display = 'flex';
-    console.log('✅ Chat window opened');
-  }
-  
-  // 4. Enable and focus input
-  const input = document.getElementById('aiChatInput');
-  if (input) {
-    input.disabled = false;
-    input.readOnly = false;
-    input.style.pointerEvents = 'auto';
-    setTimeout(() => {
-      input.focus();
-      input.select();
-    }, 300);
-    console.log('✅ Input enabled and focused');
-  }
-  
-  // 5. Update button
-  if (btn) {
-    btn.innerHTML = '✖️';
-    btn.title = 'Close AI Companion';
-  }
-  
-  console.log('\n✅ AI COMPANION READY!');
-  console.log('Try typing in the chat box now!');
-  console.log('Or run: testAISend("help")');
-  
-  // Pre-load data for instant responses
-  preloadData();
-  
-  return true;
-};
-
 // Clear cache for fresh data
 window.clearAICache = function() {
   dataCache = {
@@ -641,115 +527,101 @@ window.clearAICache = function() {
   preloadData();
 };
 
-// Make AI button draggable
+// ========== CLEAN AI DRAG IMPLEMENTATION ==========
+let aiButtonInitialized = false;
+
 function makeAIDraggable() {
   const btn = document.getElementById('aiChatBtn');
-  if (!btn) return;
+  if (!btn || aiButtonInitialized) return;
   
+  aiButtonInitialized = true;
+  console.log('🎯 Initializing AI drag...');
+  
+  // Drag state
   let isDragging = false;
-  let currentX;
-  let currentY;
-  let initialX;
-  let initialY;
-  let xOffset = 0;
-  let yOffset = 0;
+  let dragStartX = 0, dragStartY = 0;
+  let offsetX = 0, offsetY = 0;
+  let dragDistance = 0;
+  let clickBlock = false;
   
-  btn.addEventListener('mousedown', dragStart);
-  document.addEventListener('mousemove', drag);
-  document.addEventListener('mouseup', dragEnd);
-  
-  // Touch events for mobile
-  btn.addEventListener('touchstart', dragStart);
-  document.addEventListener('touchmove', drag);
-  document.addEventListener('touchend', dragEnd);
-  
-  let dragTimeout;
-  let hasMoved = false;
-  
-  function dragStart(e) {
-    const isTouch = e.type === 'touchstart';
-    initialX = isTouch ? e.touches[0].clientX - xOffset : e.clientX - xOffset;
-    initialY = isTouch ? e.touches[0].clientY - yOffset : e.clientY - yOffset;
-    hasMoved = false;
-    
-    if (e.target === btn) {
-      // Set a flag after holding for a moment
-      dragTimeout = setTimeout(() => {
-        isDragging = true;
-        btn.style.cursor = 'grabbing';
-        console.log('🖐️ Drag mode activated');
-      }, 150);
-    }
-  }
-  
-  function drag(e) {
-    const isTouch = e.type === 'touchmove';
-    const moveX = isTouch ? e.touches[0].clientX : e.clientX;
-    const moveY = isTouch ? e.touches[0].clientY : e.clientY;
-    
-    // Check if user has moved more than 5 pixels
-    const deltaX = Math.abs(moveX - (initialX + xOffset));
-    const deltaY = Math.abs(moveY - (initialY + yOffset));
-    
-    if (deltaX > 5 || deltaY > 5) {
-      hasMoved = true;
-    }
-    
-    if (!isDragging) return;
-    
-    e.preventDefault();
-    currentX = moveX - initialX;
-    currentY = moveY - initialY;
-    
-    xOffset = currentX;
-    yOffset = currentY;
-    
-    setTranslate(currentX, currentY, btn);
-  }
-  
-  function dragEnd(e) {
-    clearTimeout(dragTimeout);
-    
-    if (isDragging && hasMoved) {
-      initialX = currentX;
-      initialY = currentY;
-      
-      // Save position to localStorage
-      localStorage.setItem('aiButtonX', xOffset);
-      localStorage.setItem('aiButtonY', yOffset);
-      
-      console.log('🎯 AI button position saved:', { x: xOffset, y: yOffset });
-      
-      // Prevent click event after drag
-      setTimeout(() => {
-        isDragging = false;
-        hasMoved = false;
-      }, 100);
-    } else {
-      isDragging = false;
-      hasMoved = false;
-    }
-    
-    btn.style.cursor = 'grab';
-  }
-  
-  function setTranslate(xPos, yPos, el) {
-    el.style.transform = `translate(${xPos}px, ${yPos}px)`;
-  }
-  
-  // Load saved position
+  // Restore saved position
   const savedX = localStorage.getItem('aiButtonX');
   const savedY = localStorage.getItem('aiButtonY');
-  
   if (savedX && savedY) {
-    xOffset = parseFloat(savedX);
-    yOffset = parseFloat(savedY);
-    setTranslate(xOffset, yOffset, btn);
-    console.log('📍 AI button restored to saved position:', { x: xOffset, y: yOffset });
+    offsetX = parseFloat(savedX);
+    offsetY = parseFloat(savedY);
+    btn.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
   }
   
+  // Mouse/Touch down - start potential drag
+  function onPointerDown(e) {
+    const event = e.touches ? e.touches[0] : e;
+    dragStartX = event.clientX - offsetX;
+    dragStartY = event.clientY - offsetY;
+    dragDistance = 0;
+    isDragging = true;
+    btn.style.cursor = 'grabbing';
+    btn.style.animation = 'none';
+  }
+  
+  // Mouse/Touch move - perform drag
+  function onPointerMove(e) {
+    if (!isDragging) return;
+    
+    const event = e.touches ? e.touches[0] : e;
+    const newX = event.clientX - dragStartX;
+    const newY = event.clientY - dragStartY;
+    
+    // Calculate total drag distance
+    const dx = newX - offsetX;
+    const dy = newY - offsetY;
+    dragDistance += Math.abs(dx) + Math.abs(dy);
+    
+    offsetX = newX;
+    offsetY = newY;
+    btn.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    
+    e.preventDefault();
+  }
+  
+  // Mouse/Touch up - end drag or handle click
+  function onPointerUp(e) {
+    if (!isDragging) return;
+    
+    isDragging = false;
+    btn.style.cursor = 'grab';
+    btn.style.animation = '';
+    
+    // If dragged > 15px, it's a drag (save position)
+    // If dragged < 15px, it's a click (toggle chat)
+    if (dragDistance > 15) {
+      localStorage.setItem('aiButtonX', offsetX);
+      localStorage.setItem('aiButtonY', offsetY);
+      console.log('✅ Dragged to:', offsetX, offsetY);
+    } else if (!clickBlock) {
+      // This was a click, not a drag
+      console.log('👆 Clicked - toggling chat');
+      toggleAIChat();
+      
+      // Block rapid clicks
+      clickBlock = true;
+      setTimeout(() => { clickBlock = false; }, 600);
+    }
+    
+    e.preventDefault();
+  }
+  
+  // Attach event listeners
+  btn.addEventListener('mousedown', onPointerDown);
+  document.addEventListener('mousemove', onPointerMove);
+  document.addEventListener('mouseup', onPointerUp);
+  
+  btn.addEventListener('touchstart', onPointerDown, { passive: false });
+  document.addEventListener('touchmove', onPointerMove, { passive: false });
+  document.addEventListener('touchend', onPointerUp, { passive: false });
+  
   btn.style.cursor = 'grab';
-  console.log('✅ AI button is now draggable! Hold and drag to move.');
+  console.log('✅ AI button draggable!');
 }
 
 // Reset AI button position
@@ -764,22 +636,19 @@ window.resetAIButtonPosition = function() {
   }
 };
 
-// Initialize draggable after a short delay
-setTimeout(() => {
-  makeAIDraggable();
-}, 1000);
+// Initialize draggable - only run once when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(makeAIDraggable, 500);
+  }, { once: true });
+} else {
+  // DOM already loaded
+  setTimeout(makeAIDraggable, 500);
+}
 
-console.log('🤖 AI Student Companion script loaded');
+console.log('🤖 AI Student Companion Loaded');
+console.log('💬 Click the 🤖 button to start chatting!');
 console.log('');
-console.log('🆘 AI NOT WORKING? Try these commands:');
-console.log('   forceStartAI() - Complete setup & open chat');
-console.log('   fixAIInput() - Fix input field');
-console.log('   testAISend("help") - Test sending message');
-console.log('   testAIChat() - Run diagnostic');
-console.log('');
-console.log('⚡ FASTER RESPONSES:');
-console.log('   Data is cached for 5 minutes for instant responses!');
+console.log('📌 Useful commands:');
 console.log('   clearAICache() - Refresh data from server');
-console.log('');
-console.log('🎯 AI button is DRAGGABLE! Hold and drag to move');
-console.log('💡 Type resetAIButtonPosition() to reset position');
+console.log('   resetAIButtonPosition() - Reset button position');
