@@ -649,6 +649,32 @@ body {
   border-color: var(--primary-color);
 }
 
+/* Multi-select dropdown styling */
+.form-section select[multiple] {
+  padding: 5px;
+  min-height: 120px;
+  cursor: pointer;
+}
+
+.form-section select[multiple] option {
+  padding: 8px 12px;
+  margin: 2px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.form-section select[multiple] option:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+.form-section select[multiple] option:checked {
+  background: linear-gradient(135deg, #00BCD4, #00ACC1);
+  color: white;
+  font-weight: 600;
+}
+
 .form-section button[type="submit"],
 .form-section button[type="button"] {
   padding: 12px 24px;
@@ -1229,25 +1255,104 @@ body.dark-theme .auth-form select {
   height: 60px;
   border-radius: 50%;
   background: linear-gradient(135deg, #00BCD4, #00838F);
-  border: none;
+  color: white;
+  border: 3px solid rgba(255, 255, 255, 0.3);
   font-size: 28px;
-  cursor: grab;
-  box-shadow: 0 4px 12px rgba(0, 188, 212, 0.4);
-  transition: box-shadow 0.3s ease;
-  z-index: 999;
+  cursor: grab !important;
+  box-shadow: 0 4px 15px rgba(0, 188, 212, 0.5);
+  z-index: 9999;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   display: none; /* Hidden by default, shown by JavaScript after login */
   align-items: center;
   justify-content: center;
-  user-select: none;
-  touch-action: none;
+  
+  /* PREVENT SELECTION AND RAPID-FIRE CLICKING */
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  
+  /* Touch device optimizations - ALLOW dragging but prevent zoom/scroll */
+  touch-action: manipulation !important; /* Allows dragging, disables double-tap zoom */
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none !important;
+  
+  /* Pointer events and optimization */
+  pointer-events: auto;
+  will-change: transform;
+  
+  /* Prevent double-click zoom on mobile */
+  -ms-content-zooming: none;
+  -webkit-text-size-adjust: none;
+  
+  animation: aiButtonPulse 2s infinite;
+}
+
+/* Pulse animation to attract attention */
+@keyframes aiButtonPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.5);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 6px 25px rgba(0, 188, 212, 0.8);
+  }
 }
 
 .ai-chat-toggle-btn:hover {
-  box-shadow: 0 6px 20px rgba(0, 188, 212, 0.6);
+  animation: none;
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 188, 212, 0.8);
+  border-color: rgba(255, 255, 255, 0.6);
 }
 
 .ai-chat-toggle-btn:active {
-  cursor: grabbing;
+  cursor: grabbing !important;
+  transform: scale(0.95);
+  transition: none !important; /* Disable transitions while clicking/dragging */
+  animation: none !important; /* Stop pulse animation during interaction */
+}
+
+.ai-chat-toggle-btn:focus {
+  outline: none;
+  box-shadow: 0 4px 15px rgba(0, 188, 212, 0.5);
+}
+
+.ai-chat-toggle-btn:focus-visible {
+  outline: 2px solid rgba(0, 188, 212, 0.8);
+  outline-offset: 3px;
+}
+
+/* Ensure button content doesn't interfere with click events */
+.ai-chat-toggle-btn * {
+  pointer-events: none;
+  user-select: none !important;
+}
+
+/* Add a tooltip hint */
+.ai-chat-toggle-btn::before {
+  content: '🖱️ Click to open • Drag to move';
+  position: absolute;
+  bottom: 70px;
+  right: -20px;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: opacity 0.3s;
+  font-family: 'Segoe UI', sans-serif;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.ai-chat-toggle-btn:hover::before {
+  opacity: 1;
 }
 
 /* Chat window */
@@ -1259,12 +1364,25 @@ body.dark-theme .auth-form select {
   height: 600px;
   background: var(--card-bg);
   border-radius: 15px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
-  z-index: 998;
   overflow: hidden;
-  transition: all 0.3s ease;
+  z-index: 9998;
+  transition: all 0.3s;
+  animation: slideInUp 0.3s ease-out;
+}
+
+/* Slide-in animation */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Chat header */

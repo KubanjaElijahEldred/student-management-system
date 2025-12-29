@@ -113,23 +113,80 @@ document.querySelectorAll('.tabs button').forEach(btn => {
   });
 });
 
+// Registration number preview when course is selected
+(function initRegNoPreview() {
+  const courseSelect = document.getElementById('studentCourseSelect');
+  const previewBox = document.getElementById('regNoPreview');
+  const previewText = document.getElementById('regNoPreviewText');
+  
+  if (!courseSelect || !previewBox || !previewText) return;
+  
+  courseSelect.addEventListener('change', async () => {
+    const selectedOptions = Array.from(courseSelect.selectedOptions);
+    
+    if (selectedOptions.length === 0) {
+      previewBox.style.display = 'none';
+      return;
+    }
+    
+    // Get the first selected course
+    const firstCourseId = selectedOptions[0].value;
+    
+    try {
+      // Find the course in REF.courses
+      const course = REF.courses.find(c => String(c._id) === String(firstCourseId));
+      
+      if (course && course.code) {
+        const year = new Date().getFullYear().toString().slice(-2);
+        const courseCode = course.code.toLowerCase();
+        
+        // Generate preview with placeholder number
+        const previewRegNo = `${year}/${courseCode}/XXXXX`;
+        previewText.textContent = previewRegNo;
+        previewBox.style.display = 'block';
+        
+        // Add helpful note
+        const note = previewBox.querySelector('.reg-note');
+        if (!note) {
+          const noteEl = document.createElement('div');
+          noteEl.className = 'reg-note';
+          noteEl.style.cssText = 'font-size: 0.8em; color: var(--text-secondary); margin-top: 5px; font-style: italic;';
+          noteEl.textContent = '* Sequential number will be assigned automatically';
+          previewBox.appendChild(noteEl);
+        }
+      } else {
+        previewBox.style.display = 'none';
+      }
+    } catch (err) {
+      console.error('Error generating preview:', err);
+      previewBox.style.display = 'none';
+    }
+  });
+})();
+
 // forms
 document.getElementById('addStudentForm').addEventListener('submit', async e => {
   e.preventDefault();
   const form = e.target;
   const fd = new FormData();
   const formData = new FormData(form);
-  const courseIds = (formData.get('course_ids') || '')
-    .split(',')
-    .map(s => Number(String(s).trim()))
-    .filter(n => !Number.isNaN(n));
+  
+  // Get selected course IDs from multi-select dropdown
+  const courseSelect = form.querySelector('#studentCourseSelect');
+  const selectedOptions = Array.from(courseSelect.selectedOptions);
+  const courseIds = selectedOptions
+    .map(opt => opt.value)
+    .filter(v => v && v.trim());
+  
   const sid = (formData.get('_id') || '').trim();
   if (sid) fd.append('_id', String(Number(sid)));
   fd.append('name', formData.get('name') || '');
   if (formData.get('age')) fd.append('age', String(Number(formData.get('age'))));
   if (formData.get('gender')) fd.append('gender', formData.get('gender'));
+  
   // Send course_ids as multiple form fields (backend will receive as array)
   courseIds.forEach(id => fd.append('course_ids', id));
+  
   const file = form.querySelector('input[name="photo"]').files[0];
   const dataUrl = form.querySelector('#studentPhotoData')?.value;
   if (file) {
@@ -145,7 +202,18 @@ document.getElementById('addStudentForm').addEventListener('submit', async e => 
     alert(json?.error || 'Failed to add student. You may need admin/teacher role.');
     return;
   }
+  
+  // Show success message with registration number
+  const regNo = json.student?.registrationNo || 'N/A';
+  const studentName = json.student?.name || 'Student';
+  alert(`✅ Student added successfully!\n\nName: ${studentName}\nRegistration Number: ${regNo}`);
+  
   e.target.reset();
+  
+  // Hide preview box after successful submission
+  const previewBox = document.getElementById('regNoPreview');
+  if (previewBox) previewBox.style.display = 'none';
+  
   loadStudents();
   preloadReferences();
 });
@@ -802,8 +870,9 @@ window.loadEnrollments = async function() {
         <td>${(en.course_ids || []).join(', ')}</td>
         <td>${en.status || ''}</td>
         <td>
-          <button class="en-approve" data-id="${en._id}">Approve</button>
-          <button class="en-reject" data-id="${en._id}">Reject</button>
+          <button class="en-approve" data-id="${en._id}" style="background: #4CAF50;">✓ Approve</button>
+          <button class="en-reject" data-id="${en._id}" style="background: #ff9800;">✗ Reject</button>
+          <button class="en-delete" data-id="${en._id}" style="background: #f44336;">🗑️ Delete</button>
         </td>
       </tr>`;
     }).join('');
@@ -839,9 +908,42 @@ window.loadEnrollments = async function() {
       }
     }));
     
+    tbody.querySelectorAll('.en-delete').forEach(btn => btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const enrollmentId = btn.dataset.id;
+      
+      if (!enrollmentId || enrollmentId === 'undefined') {
+        alert('❌ Invalid enrollment ID!');
+        return;
+      }
+      
+      if (!confirm('⚠️ Are you sure you want to delete this enrollment? This action cannot be undone.')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/enrollments/${enrollmentId}`, {
+          method: 'DELETE',
+          headers: { ...authHeaders() }
+        });
+        
+        const json = await res.json();
+        
+        if (json.success || res.ok) {
+          alert('✅ Enrollment deleted successfully!');
+          loadEnrollments();
+        } else {
+          alert('❌ Failed to delete enrollment: ' + (json.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('❌ Error deleting enrollment: ' + err.message);
+      }
+    }));
+    
     console.log('✅ Enrollment buttons attached:', {
       approve: tbody.querySelectorAll('.en-approve').length,
-      reject: tbody.querySelectorAll('.en-reject').length
+      reject: tbody.querySelectorAll('.en-reject').length,
+      delete: tbody.querySelectorAll('.en-delete').length
     });
   }
   } catch (err) {
@@ -942,6 +1044,7 @@ function renderDatalists() {
   const dlS = document.getElementById('dlStudents');
   const dlC = document.getElementById('dlCourses');
   const dlT = document.getElementById('dlTeachers');
+  const studentCourseSelect = document.getElementById('studentCourseSelect');
   
   // Safety checks: ensure arrays exist before mapping
   if (dlS && Array.isArray(REF.students)) {
@@ -958,6 +1061,63 @@ function renderDatalists() {
   }
   if (dlT && Array.isArray(REF.teachers)) {
     dlT.innerHTML = REF.teachers.map(t => `<option value="${t._id}">${t.name}</option>`).join('');
+  }
+  
+  // Populate student course select dropdown
+  if (studentCourseSelect && Array.isArray(REF.courses)) {
+    if (REF.courses.length === 0) {
+      studentCourseSelect.innerHTML = '<option value="" disabled>No courses available</option>';
+    } else {
+      // STRICT FILTER: Only show courses with valid _id, name, AND code
+      const validCourses = REF.courses.filter(c => {
+        const hasValidId = c._id && c._id !== 'undefined' && c._id.length > 0;
+        const hasValidName = c.name && c.name !== 'undefined' && c.name.trim() !== '';
+        const hasValidCode = c.code && c.code !== 'undefined' && c.code.trim() !== '';
+        const isValid = hasValidId && hasValidName && hasValidCode;
+        
+        if (!isValid) {
+          console.warn('⚠️ Excluding invalid course from dropdown:', c);
+        }
+        
+        return isValid;
+      });
+      
+      console.log(`📚 Courses: ${REF.courses.length} total, ${validCourses.length} valid for dropdown`);
+      
+      // Store invalid courses for potential cleanup
+      const invalidCourses = REF.courses.filter(c => {
+        const hasValidId = c._id && c._id !== 'undefined' && c._id.length > 0;
+        const hasValidName = c.name && c.name !== 'undefined' && c.name.trim() !== '';
+        const hasValidCode = c.code && c.code !== 'undefined' && c.code.trim() !== '';
+        return !(hasValidId && hasValidName && hasValidCode);
+      });
+      
+      if (invalidCourses.length > 0) {
+        console.warn(`\n🗑️ ═══════════════════════════════════════════════════`);
+        console.warn(`   Found ${invalidCourses.length} INVALID COURSE(S) in database!`);
+        console.warn(`   These courses are HIDDEN from the student form.`);
+        console.warn(`═══════════════════════════════════════════════════`);
+        console.warn(`\n🧹 TO DELETE INVALID COURSES, run one of these commands:`);
+        console.warn(`   1. quickCleanupCourses()   ⚡ Quick cleanup (Recommended)`);
+        console.warn(`   2. cleanupInvalidCourses() 🔍 Full database scan`);
+        console.warn(`\n📋 Invalid courses list:`);
+        console.table(invalidCourses.map(c => ({
+          ID: c._id || 'MISSING',
+          Name: c.name || 'MISSING',
+          Code: c.code || 'MISSING'
+        })));
+        
+        window.invalidCoursesToCleanup = invalidCourses;
+      }
+      
+      if (validCourses.length === 0) {
+        studentCourseSelect.innerHTML = '<option value="" disabled>No valid courses found. Please add courses first.</option>';
+      } else {
+        studentCourseSelect.innerHTML = validCourses.map(c => {
+          return `<option value="${c._id}">${c.name} [${c.code}]</option>`;
+        }).join('');
+      }
+    }
   }
 }
 
@@ -1118,8 +1278,66 @@ window.loadCourses = async function() {
       return;
     }
     
-    tbody.innerHTML = items.map(c => {
+    // STRICT FILTER: Only show courses with valid _id, name, AND code
+    const validCourses = items.filter(c => {
+      const hasValidId = c._id && c._id !== 'undefined' && c._id.length > 0;
+      const hasValidName = c.name && c.name !== 'undefined' && c.name.trim() !== '';
+      const hasValidCode = c.code && c.code !== 'undefined' && c.code.trim() !== '';
+      const isValid = hasValidId && hasValidName && hasValidCode;
+      
+      if (!isValid) {
+        console.warn('⚠️ Hiding invalid course from Courses List:', c);
+      }
+      return isValid;
+    });
+    
+    const invalidCount = items.length - validCourses.length;
+    
+    // Update UI warning banner
+    const warningBanner = document.getElementById('invalidCoursesWarning');
+    const countElement = document.getElementById('invalidCoursesCount');
+    
+    if (invalidCount > 0) {
+      // Store invalid courses (those missing _id, name, or code)
+      const invalidCourses = items.filter(c => {
+        const hasValidId = c._id && c._id !== 'undefined' && c._id.length > 0;
+        const hasValidName = c.name && c.name !== 'undefined' && c.name.trim() !== '';
+        const hasValidCode = c.code && c.code !== 'undefined' && c.code.trim() !== '';
+        return !(hasValidId && hasValidName && hasValidCode);
+      });
+      
+      window.invalidCoursesToDelete = invalidCourses;
+      
+      // Show warning banner
+      if (warningBanner) warningBanner.style.display = 'block';
+      if (countElement) countElement.textContent = invalidCount;
+      
+      console.warn(`\n🗑️ ═══════════════════════════════════════════════════`);
+      console.warn(`   HIDDEN ${invalidCount} INVALID COURSE(S) from Courses List!`);
+      console.warn(`═══════════════════════════════════════════════════`);
+      console.warn(`\n🧹 TO DELETE THEM FROM DATABASE, run:`);
+      console.warn(`   quickCleanupCourses()   ⚡ (Recommended)`);
+      console.warn(`\n📋 Hidden courses:`);
+      console.table(invalidCourses.map(c => ({
+        ID: c._id || 'MISSING',
+        Name: c.name || 'MISSING',
+        Code: c.code || 'MISSING'
+      })));
+    } else {
+      // Hide warning banner
+      if (warningBanner) warningBanner.style.display = 'none';
+      console.log(`✅ All ${items.length} courses are valid!`);
+    }
+    
+    // Check if we have any valid courses to display
+    if (validCourses.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5">⚠️ No valid courses to display. All courses in database are missing required fields (_id, name, or code). Run <code>quickCleanupCourses()</code> to delete them.</td></tr>';
+      return;
+    }
+    
+    tbody.innerHTML = validCourses.map(c => {
       const description = c.description ? (c.description.length > 50 ? c.description.substring(0, 50) + '...' : c.description) : 'No description';
+      
       return `
       <tr data-course-id="${c._id}">
         <td><strong>${c.code ?? ''}</strong></td>
@@ -1143,8 +1361,12 @@ window.loadCourses = async function() {
 // Edit course
 window.editCourse = async function(courseId) {
   try {
+    console.log('🔍 Editing course ID:', courseId);
     const courses = await api('/courses', { headers: { ...authHeaders() } });
+    console.log('📚 All courses:', courses.map(c => ({ id: c._id, name: c.name, code: c.code })));
+    
     const course = courses.find(c => String(c._id) === String(courseId));
+    console.log('✅ Found course:', course);
     
     if (!course) {
       alert('Course not found');
@@ -1190,6 +1412,306 @@ window.editCourse = async function(courseId) {
   }
 }
 
+// Diagnostic: Check what courses are available and what codes they have
+window.checkCourses = async function() {
+  console.log('🔍 === CHECKING COURSES ===');
+  try {
+    const courses = await api('/courses', { headers: { ...authHeaders() } });
+    console.log(`📚 Total courses: ${courses.length}`);
+    console.table(courses.map(c => ({
+      ID: c._id,
+      Name: c.name,
+      Code: c.code || '❌ MISSING',
+      Credits: c.credits
+    })));
+    
+    // Check if any are missing codes
+    const missingCodes = courses.filter(c => !c.code || c.code === 'undefined');
+    if (missingCodes.length > 0) {
+      console.warn(`⚠️ ${missingCodes.length} courses are missing codes!`);
+      console.log('Run fixCourseCodes() to fix them.');
+    } else {
+      console.log('✅ All courses have codes!');
+    }
+    
+    return courses;
+  } catch (err) {
+    console.error('❌ Error:', err);
+  }
+};
+
+// Diagnostic: Test what gets sent when adding a student
+window.testStudentPayload = function() {
+  const courseSelect = document.getElementById('studentCourseSelect');
+  if (!courseSelect) {
+    console.error('❌ Course select not found!');
+    return;
+  }
+  
+  const selectedOptions = Array.from(courseSelect.selectedOptions);
+  const courseIds = selectedOptions.map(opt => opt.value).filter(v => v && v.trim());
+  
+  console.log('📋 === STUDENT PAYLOAD TEST ===');
+  console.log('Selected options:', selectedOptions.length);
+  console.log('Course IDs:', courseIds);
+  console.log('First course ID:', courseIds[0]);
+  console.log('Type:', typeof courseIds[0]);
+  
+  return { selectedOptions, courseIds };
+};
+
+// Helper function to fix course codes based on course names
+window.fixCourseCodes = async function() {
+  console.log('🔧 Fixing course codes...');
+  
+  try {
+    const courses = await api('/courses', { headers: { ...authHeaders() } });
+    console.log('📚 Found', courses.length, 'courses');
+    
+    // Mapping of course names to codes (add more as needed)
+    const codeMapping = {
+      'software engineering': 'BSE',
+      'computer science': 'BCS',
+      'information technology': 'BIT',
+      'data science': 'BDS',
+      'database systems': 'DAT',
+      'networking': 'INF',
+      'cybersecurity': 'CYB',
+      'artificial intelligence': 'DAI',
+      'business administration': 'BBA',
+      'accounting': 'BAC',
+      'marketing': 'MKT',
+      'finance': 'FIN',
+      'general': 'GEN'
+    };
+    
+    let fixed = 0;
+    for (const course of courses) {
+      const nameLower = (course.name || '').toLowerCase();
+      
+      // Try to find a matching code
+      let suggestedCode = course.code; // Keep existing if no match
+      for (const [keyword, code] of Object.entries(codeMapping)) {
+        if (nameLower.includes(keyword)) {
+          suggestedCode = code;
+          break;
+        }
+      }
+      
+      // If no code exists, use first 3 letters of name
+      if (!course.code || course.code === 'DAT' || course.code === 'GEN') {
+        if (suggestedCode === course.code) {
+          suggestedCode = course.name.substring(0, 3).toUpperCase();
+        }
+        
+        console.log(`📝 ${course.name}: ${course.code || 'NONE'} → ${suggestedCode}`);
+        
+        // Update the course
+        const res = await fetch(`/api/courses/${course._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({
+            name: course.name,
+            code: suggestedCode,
+            credits: course.credits,
+            description: course.description
+          })
+        });
+        
+        if (res.ok) {
+          fixed++;
+        }
+      }
+    }
+    
+    console.log(`✅ Fixed ${fixed} course codes!`);
+    alert(`✅ Fixed ${fixed} course codes! Refreshing...`);
+    loadCourses();
+    preloadReferences();
+    
+  } catch (err) {
+    console.error('❌ Error fixing courses:', err);
+    alert('❌ Error: ' + err.message);
+  }
+};
+
+// Utility: Clean up invalid courses from database
+window.cleanupInvalidCourses = async function() {
+  console.log('🧹 Starting course cleanup...');
+  
+  try {
+    const courses = await api('/courses', { headers: { ...authHeaders() } });
+    console.log(`📚 Found ${courses.length} total courses`);
+    
+    const invalidCourses = [];
+    const validCourses = [];
+    
+    // Check each course for validity (STRICT: must have _id, name, AND code)
+    courses.forEach(course => {
+      const issues = [];
+      
+      const hasValidId = course._id && course._id !== 'undefined' && course._id.length > 0;
+      const hasValidName = course.name && course.name !== 'undefined' && course.name.trim() !== '';
+      const hasValidCode = course.code && course.code !== 'undefined' && course.code.trim() !== '';
+      
+      // Track what's missing
+      if (!hasValidId) issues.push('Missing or invalid _id');
+      if (!hasValidName) issues.push('Missing or invalid name');
+      if (!hasValidCode) issues.push('Missing or invalid code');
+      
+      // A course is VALID only if it has ALL three fields
+      const isValid = hasValidId && hasValidName && hasValidCode;
+      
+      if (!isValid) {
+        invalidCourses.push({ course, issues });
+      } else {
+        validCourses.push(course);
+      }
+    });
+    
+    console.log(`✅ Valid courses: ${validCourses.length}`);
+    console.log(`❌ Invalid courses: ${invalidCourses.length}`);
+    
+    if (invalidCourses.length > 0) {
+      console.log('📋 Invalid courses found:');
+      console.table(invalidCourses.map(item => ({
+        ID: item.course._id || 'MISSING',
+        Name: item.course.name || 'MISSING',
+        Code: item.course.code || 'MISSING',
+        Issues: item.issues.join(', ')
+      })));
+      
+      // Ask for confirmation
+      const confirmDelete = confirm(
+        `Found ${invalidCourses.length} invalid course(s).\n\n` +
+        `Do you want to DELETE them?\n\n` +
+        `(Check console for details)`
+      );
+      
+      if (confirmDelete) {
+        let deleted = 0;
+        let failed = 0;
+        
+        for (const item of invalidCourses) {
+          if (item.course._id) {
+            try {
+              const res = await fetch(`/api/courses/${item.course._id}`, {
+                method: 'DELETE',
+                headers: { ...authHeaders() }
+              });
+              
+              if (res.ok) {
+                deleted++;
+                console.log(`✅ Deleted: ${item.course.name || item.course._id}`);
+              } else {
+                failed++;
+                console.error(`❌ Failed to delete: ${item.course.name || item.course._id}`);
+              }
+            } catch (err) {
+              failed++;
+              console.error(`❌ Error deleting: ${item.course.name || item.course._id}`, err);
+            }
+          } else {
+            console.warn(`⚠️ Cannot delete course without _id:`, item.course);
+            failed++;
+          }
+        }
+        
+        console.log('');
+        console.log('📊 Cleanup Summary:');
+        console.log(`   ✅ Deleted: ${deleted}`);
+        console.log(`   ❌ Failed: ${failed}`);
+        console.log(`   📚 Remaining: ${validCourses.length}`);
+        
+        alert(`✅ Cleanup complete!\n\nDeleted: ${deleted}\nFailed: ${failed}\nRemaining: ${validCourses.length}`);
+        
+        // Refresh the courses list
+        loadCourses();
+        preloadReferences();
+      } else {
+        console.log('❌ Cleanup cancelled by user');
+      }
+    } else {
+      console.log('✅ No invalid courses found! Database is clean.');
+      alert('✅ All courses are valid! No cleanup needed.');
+    }
+    
+  } catch (err) {
+    console.error('❌ Error during cleanup:', err);
+    alert('❌ Error: ' + err.message);
+  }
+};
+
+// Quick cleanup - uses detected invalid courses
+window.quickCleanupCourses = async function() {
+  console.log('⚡ Quick cleanup starting...');
+  
+  // Use either list of invalid courses
+  const toCleanup = window.invalidCoursesToCleanup || window.invalidCoursesToDelete || [];
+  
+  if (toCleanup.length === 0) {
+    console.log('✅ No invalid courses detected. Refresh the page or go to Students page to detect invalid courses.');
+    alert('✅ No invalid courses detected!\n\nNavigate to the Students page to auto-detect invalid courses, or run cleanupInvalidCourses() for a full scan.');
+    return;
+  }
+  
+  console.log(`🗑️ Found ${toCleanup.length} invalid course(s) to cleanup`);
+  console.table(toCleanup.map(c => ({
+    ID: c._id || 'MISSING',
+    Name: c.name || 'MISSING', 
+    Code: c.code || 'MISSING'
+  })));
+  
+  if (!confirm(`Delete ${toCleanup.length} invalid course(s) from database?\n\nThis cannot be undone.`)) {
+    console.log('❌ Cleanup cancelled by user');
+    return;
+  }
+  
+  let deleted = 0;
+  let failed = 0;
+  
+  for (const course of toCleanup) {
+    if (course._id && course._id !== 'undefined') {
+      try {
+        const res = await fetch(`/api/courses/${course._id}`, {
+          method: 'DELETE',
+          headers: { ...authHeaders() }
+        });
+        
+        if (res.ok) {
+          deleted++;
+          console.log(`✅ Deleted: ${course.name || course._id}`);
+        } else {
+          failed++;
+          console.error(`❌ Failed to delete: ${course.name || course._id}`);
+        }
+      } catch (err) {
+        failed++;
+        console.error(`❌ Error deleting: ${course.name || course._id}`, err);
+      }
+    } else {
+      console.warn('⚠️ Cannot delete course without valid _id:', course);
+      failed++;
+    }
+  }
+  
+  console.log(`\n📊 Cleanup Summary:\n   ✅ Deleted: ${deleted}\n   ❌ Failed: ${failed}`);
+  alert(`✅ Deleted ${deleted} invalid course(s)!${failed > 0 ? `\n\n⚠️ ${failed} failed to delete` : ''}\n\nRefreshing...`);
+  
+  // Hide warning banner
+  const warningBanner = document.getElementById('invalidCoursesWarning');
+  if (warningBanner) warningBanner.style.display = 'none';
+  
+  // Clear the lists and refresh
+  window.invalidCoursesToCleanup = [];
+  window.invalidCoursesToDelete = [];
+  loadCourses();
+  preloadReferences();
+};
+
+// Delete invalid courses that were filtered from display (alias for backward compatibility)
+window.deleteInvalidCourses = window.quickCleanupCourses;
+
 // Delete course
 window.deleteCourse = async function(courseId) {
   if (!confirm('⚠️ Are you sure you want to delete this course? This action cannot be undone.')) {
@@ -1219,7 +1741,7 @@ window.deleteCourse = async function(courseId) {
 window.loadTeachers = async function() {
   const tbody = document.querySelector('#teachersTable tbody');
   if (tbody) {
-    tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
   }
   const items = await api('/teachers', { headers: { ...authHeaders() } });
   if (tbody) {
@@ -1229,7 +1751,79 @@ window.loadTeachers = async function() {
         <td>${t._id ?? ''}</td>
         <td>${t.name ?? ''}</td>
         <td>${t.subject ?? ''}</td>
+        <td>
+          <button onclick="editTeacher('${t._id}')" style="padding: 5px 10px; font-size: 0.85em; background: #FF9800;">✏️ Edit</button>
+          <button onclick="deleteTeacher('${t._id}')" style="padding: 5px 10px; font-size: 0.85em; background: #f44336;">🗑️ Delete</button>
+        </td>
       </tr>`).join('');
+  }
+}
+
+// Edit teacher
+window.editTeacher = async function(teacherId) {
+  try {
+    const teachers = await api('/teachers', { headers: { ...authHeaders() } });
+    const teacher = teachers.find(t => String(t._id) === String(teacherId));
+    
+    if (!teacher) {
+      alert('Teacher not found');
+      return;
+    }
+    
+    const newName = prompt('Edit Teacher Name:', teacher.name);
+    if (newName === null) return;
+    
+    const newSubject = prompt('Edit Subject:', teacher.subject || '');
+    if (newSubject === null) return;
+    
+    const payload = {
+      name: newName.trim(),
+      subject: newSubject.trim()
+    };
+    
+    const res = await fetch(`/api/teachers/${teacherId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload)
+    });
+    
+    const json = await res.json();
+    
+    if (json.success || res.ok) {
+      alert('✅ Teacher updated successfully!');
+      loadTeachers();
+      preloadReferences();
+    } else {
+      alert('❌ Failed to update teacher: ' + (json.error || 'Unknown error'));
+    }
+  } catch (err) {
+    alert('❌ Error updating teacher: ' + err.message);
+  }
+}
+
+// Delete teacher
+window.deleteTeacher = async function(teacherId) {
+  if (!confirm('⚠️ Are you sure you want to delete this teacher? This action cannot be undone.')) {
+    return;
+  }
+  
+  try {
+    const res = await fetch(`/api/teachers/${teacherId}`, {
+      method: 'DELETE',
+      headers: { ...authHeaders() }
+    });
+    
+    const json = await res.json();
+    
+    if (json.success || res.ok) {
+      alert('✅ Teacher deleted successfully!');
+      loadTeachers();
+      preloadReferences();
+    } else {
+      alert('❌ Failed to delete teacher: ' + (json.error || 'Unknown error'));
+    }
+  } catch (err) {
+    alert('❌ Error deleting teacher: ' + err.message);
   }
 }
 
@@ -1256,6 +1850,47 @@ document.getElementById('addClassForm').addEventListener('submit', async (e) => 
   loadClasses();
 });
 
+// Edit class
+async function editClass(classId, name, dept, year, section) {
+  const newName = prompt('Edit Class Name:', name);
+  if (newName === null) return;
+  
+  const newDept = prompt('Edit Department:', dept);
+  if (newDept === null) return;
+  
+  const newYear = prompt('Edit Year:', year);
+  if (newYear === null) return;
+  
+  const newSection = prompt('Edit Section:', section);
+  if (newSection === null) return;
+  
+  const payload = {
+    name: newName.trim(),
+    department: newDept.trim() || undefined,
+    year: newYear ? Number(newYear) : undefined,
+    section: newSection.trim() || undefined
+  };
+  
+  try {
+    const res = await fetch(`/api/classes/${classId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload)
+    });
+    
+    const json = await res.json();
+    
+    if (json.success || res.ok) {
+      alert('✅ Class updated successfully!');
+      loadClasses();
+    } else {
+      alert('❌ Failed to update class: ' + (json.error || 'Unknown error'));
+    }
+  } catch (err) {
+    alert('❌ Error updating class: ' + err.message);
+  }
+}
+
 window.loadClasses = async function() {
   const tbody = document.querySelector('#classesTable tbody');
   if (tbody) tbody.innerHTML = '<tr><td colspan="6">Loading...</td></tr>';
@@ -1281,12 +1916,18 @@ window.loadClasses = async function() {
           <td>${c.year ?? ''}</td>
           <td>${c.section || ''}</td>
           <td><button class="open-members" data-id="${c._id}" data-name="${(c.name||'').replace(/\"/g,'&quot;')}">${(c.student_ids || []).length} manage</button></td>
-          <td><button class="del-class" data-id="${c._id}">Delete</button></td>
+          <td>
+            <button class="edit-class" data-id="${c._id}" data-name="${c.name}" data-dept="${c.department||''}" data-year="${c.year||''}" data-section="${c.section||''}" style="background: #FF9800; margin-right: 5px;">✏️ Edit</button>
+            <button class="del-class" data-id="${c._id}" style="background: #f44336;">🗑️ Delete</button>
+          </td>
         </tr>
       `}).join('');
+      tbody.querySelectorAll('.edit-class').forEach(btn => btn.addEventListener('click', () => editClass(btn.dataset.id, btn.dataset.name, btn.dataset.dept, btn.dataset.year, btn.dataset.section)));
       tbody.querySelectorAll('.del-class').forEach(btn => btn.addEventListener('click', async () => {
+        if (!confirm('⚠️ Are you sure you want to delete this class?')) return;
         const res = await fetch(`/api/classes/${btn.dataset.id}`, { method: 'DELETE', headers: { ...authHeaders() } });
         if (!res.ok) { alert('Failed to delete'); return; }
+        alert('✅ Class deleted successfully!');
         loadClasses();
       }));
       tbody.querySelectorAll('.open-members').forEach(btn => btn.addEventListener('click', () => openClassMembers(btn.dataset.id, btn.dataset.name)));
@@ -1775,12 +2416,12 @@ window.deleteResult = async function(resultId) {
 window.loadAttendance = async function() {
   const tbody = document.querySelector('#attendanceTable tbody');
   if (tbody) {
-    tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
   }
   const items = await api('/attendance', { headers: { ...authHeaders() } });
   if (tbody) {
     if (!Array.isArray(items) || items.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4">No attendance records yet</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5">No attendance records yet</td></tr>';
       return;
     }
     tbody.innerHTML = items.map(a => {
@@ -1794,8 +2435,66 @@ window.loadAttendance = async function() {
         <td>${studentDisp}</td>
         <td>${courseDisp}</td>
         <td>${a.present ? 'Present' : 'Absent'}</td>
+        <td>
+          <button onclick="editAttendance('${a._id}', ${a.present})" style="padding: 5px 10px; font-size: 0.85em; background: #FF9800;">✏️ Toggle</button>
+          <button onclick="deleteAttendance('${a._id}')" style="padding: 5px 10px; font-size: 0.85em; background: #f44336;">🗑️ Delete</button>
+        </td>
       </tr>`;
     }).join('');
+  }
+};
+
+// Edit attendance (toggle present/absent)
+window.editAttendance = async function(attendanceId, currentPresent) {
+  const newStatus = !currentPresent;
+  const statusText = newStatus ? 'Present' : 'Absent';
+  
+  if (!confirm(`Change attendance status to ${statusText}?`)) {
+    return;
+  }
+  
+  try {
+    const res = await fetch(`/api/attendance/${attendanceId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ present: newStatus })
+    });
+    
+    const json = await res.json();
+    
+    if (json.success || res.ok) {
+      alert(`✅ Attendance updated to ${statusText}!`);
+      loadAttendance();
+    } else {
+      alert('❌ Failed to update attendance: ' + (json.error || 'Unknown error'));
+    }
+  } catch (err) {
+    alert('❌ Error updating attendance: ' + err.message);
+  }
+};
+
+// Delete attendance
+window.deleteAttendance = async function(attendanceId) {
+  if (!confirm('⚠️ Are you sure you want to delete this attendance record?')) {
+    return;
+  }
+  
+  try {
+    const res = await fetch(`/api/attendance/${attendanceId}`, {
+      method: 'DELETE',
+      headers: { ...authHeaders() }
+    });
+    
+    const json = await res.json();
+    
+    if (json.success || res.ok) {
+      alert('✅ Attendance record deleted successfully!');
+      loadAttendance();
+    } else {
+      alert('❌ Failed to delete attendance: ' + (json.error || 'Unknown error'));
+    }
+  } catch (err) {
+    alert('❌ Error deleting attendance: ' + err.message);
   }
 };
 
@@ -2018,11 +2717,20 @@ document.addEventListener('DOMContentLoaded', () => {
       // preload references for datalists
       preloadReferences();
     } catch (err) {
-      console.error('Signup error:', err);
+      console.error('❌ Signup error:', err);
+      console.error('Error details:', {
+        message: err.message,
+        name: err.name,
+        stack: err.stack
+      });
+      
+      const errorMessage = err.message || 'Network error. Please check if the server is running.';
+      
       if (signupMsg) {
-        signupMsg.textContent = err.message;
+        signupMsg.textContent = errorMessage;
+        signupMsg.style.color = '#f44336';
       } else {
-        alert('Signup failed: ' + err.message);
+        alert('Signup failed: ' + errorMessage);
       }
     }
   });
@@ -2038,8 +2746,19 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const formData = new FormData(loginForm);
       const payload = { email: formData.get('email'), password: formData.get('password') };
+      
+      console.log('📤 Attempting login...', { email: payload.email });
+      
       const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      
+      console.log('📥 Login response status:', res.status);
+      
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status} ${res.statusText}`);
+      }
+      
       const json = await res.json();
+      console.log('✅ Login response:', json.success ? 'Success' : 'Failed');
       
       if (!json.success) throw new Error(json.error || 'Login failed');
       
@@ -2110,11 +2829,20 @@ document.addEventListener('DOMContentLoaded', () => {
       // preload references for datalists
       preloadReferences();
     } catch (err) {
-      console.error('Login error:', err);
+      console.error('❌ Login error:', err);
+      console.error('Error details:', {
+        message: err.message,
+        name: err.name,
+        stack: err.stack
+      });
+      
+      const errorMessage = err.message || 'Network error. Please check if the server is running.';
+      
       if (loginMsg) {
-        loginMsg.textContent = err.message;
+        loginMsg.textContent = errorMessage;
+        loginMsg.style.color = '#f44336';
       } else {
-        alert('Login failed: ' + err.message);
+        alert('Login failed: ' + errorMessage);
       }
     }
   });
@@ -2318,14 +3046,16 @@ window.loadPayments = async function() {
           ? `<span style="color: #999; font-size: 0.85em;">⏳ Generating...</span>`
           : `<span style="color: #999; font-size: 0.85em;">—</span>`;
         
-        const actions = p.status === 'Pending'
-          ? `<button onclick="confirmPayment('${p._id}')" style="padding: 5px 10px; font-size: 0.85em; background: #4CAF50;">✅ Confirm</button>
-             <button onclick="rejectPayment('${p._id}')" style="padding: 5px 10px; font-size: 0.85em; background: #f44336;">❌ Reject</button>`
-          : p.status === 'Confirmed' && p.paymentType === 'Exam Fee' && !p.examPassGenerated
-          ? `<button onclick="generateExamPassManually('${p._id}')" style="padding: 5px 10px; font-size: 0.85em; background: #2196F3;">🎫 Generate Pass</button>`
-          : p.status === 'Confirmed' && p.examPassGenerated
-          ? `<button onclick="viewPaymentDetails('${p._id}')" style="padding: 5px 10px; font-size: 0.85em;">👁️ View</button>`
-          : `<button onclick="viewPaymentDetails('${p._id}')" style="padding: 5px 10px; font-size: 0.85em;">👁️ View</button>`;
+        let actions = '';
+        if (p.status === 'Pending') {
+          actions = `<button onclick="confirmPayment('${p._id}')" style="padding: 5px 10px; font-size: 0.85em; background: #4CAF50;">✅ Confirm</button>
+                     <button onclick="rejectPayment('${p._id}')" style="padding: 5px 10px; font-size: 0.85em; background: #f44336;">❌ Reject</button>`;
+        } else if (p.status === 'Confirmed' && p.paymentType === 'Exam Fee' && !p.examPassGenerated) {
+          actions = `<button onclick="generateExamPassManually('${p._id}')" style="padding: 5px 10px; font-size: 0.85em; background: #2196F3;">🎫 Generate Pass</button>`;
+        } else {
+          actions = `<button onclick="viewPaymentDetails('${p._id}')" style="padding: 5px 10px; font-size: 0.85em;">👁️ View</button>`;
+        }
+        actions += ` <button onclick="deletePayment('${p._id}')" style="padding: 5px 10px; font-size: 0.85em; background: #d32f2f;">🗑️ Delete</button>`;
         
         return `
         <tr>
@@ -2427,7 +3157,75 @@ window.generateExamPassManually = async function(paymentId) {
 
 // View payment details
 window.viewPaymentDetails = async function(paymentId) {
-  alert('Payment details view - implementation pending');
+  try {
+    const data = await api('/payments', { headers: { ...authHeaders() } });
+    const payments = data.payments || [];
+    const payment = payments.find(p => String(p._id) === String(paymentId));
+    
+    if (!payment) {
+      alert('Payment not found');
+      return;
+    }
+    
+    const student = payment.student_id;
+    const studentInfo = student ? `${student.name}${student.registrationNo ? ' (' + student.registrationNo + ')' : ''}` : 'N/A';
+    const confirmedBy = payment.confirmedBy ? `${payment.confirmedBy.username} (${payment.confirmedBy.role})` : 'N/A';
+    const examPassInfo = payment.examPassId && payment.examPassId.passNumber 
+      ? `Pass Number: ${payment.examPassId.passNumber}\nStatus: ${payment.examPassId.status || 'Active'}\nExpiry: ${new Date(payment.examPassId.expiryDate).toLocaleDateString()}`
+      : 'No exam pass generated';
+    
+    const details = `
+💳 PAYMENT DETAILS
+━━━━━━━━━━━━━━━━━━━━━━
+Receipt Number: ${payment.receiptNumber || 'N/A'}
+Student: ${studentInfo}
+Payment Type: ${payment.paymentType || 'N/A'}
+Amount: $${payment.amount?.toFixed(2) || '0.00'}
+Payment Method: ${payment.paymentMethod || 'N/A'}
+Status: ${payment.status || 'N/A'}
+━━━━━━━━━━━━━━━━━━━━━━
+Semester: ${payment.semester || 'N/A'}
+Academic Year: ${payment.academicYear || 'N/A'}
+Transaction Reference: ${payment.transactionRef || 'N/A'}
+━━━━━━━━━━━━━━━━━━━━━━
+Submitted: ${payment.createdAt ? new Date(payment.createdAt).toLocaleString() : 'N/A'}
+Confirmed At: ${payment.confirmedAt ? new Date(payment.confirmedAt).toLocaleString() : 'Not confirmed'}
+Confirmed By: ${confirmedBy}
+━━━━━━━━━━━━━━━━━━━━━━
+🎫 EXAM PASS INFO:
+${examPassInfo}
+${payment.status === 'Rejected' ? '\n❌ Rejection Reason: ' + (payment.rejectionReason || 'Not provided') : ''}
+    `.trim();
+    
+    alert(details);
+  } catch (err) {
+    alert('Error loading payment details: ' + err.message);
+  }
+};
+
+// Delete payment (Admin only)
+window.deletePayment = async function(paymentId) {
+  if (!confirm('⚠️ Are you sure you want to delete this payment? This action cannot be undone.')) {
+    return;
+  }
+  
+  try {
+    const res = await fetch(`/api/payments/${paymentId}`, {
+      method: 'DELETE',
+      headers: { ...authHeaders() }
+    });
+    
+    const json = await res.json();
+    
+    if (json.success || res.ok) {
+      alert('✅ Payment deleted successfully!');
+      loadPayments();
+    } else {
+      alert('❌ Failed to delete payment: ' + (json.error || 'Unknown error'));
+    }
+  } catch (err) {
+    alert('❌ Error deleting payment: ' + err.message);
+  }
 };
 
 // Filter payments

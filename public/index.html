@@ -228,6 +228,10 @@
         <span class="icon">🎫</span>
         <span>Exam Passes</span>
       </a>
+      <a href="#" class="nav-item" data-page="settings" onclick="event.preventDefault(); showPage('settings');">
+        <span class="icon">⚙️</span>
+        <span>Settings</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
@@ -394,7 +398,14 @@
             <option value="male">Male</option>
             <option value="female">Female</option>
           </select>
-          <input type="text" name="course_ids" placeholder="Course IDs (comma-separated, e.g. 101,102)">
+          <label for="studentCourseSelect" style="font-size: 0.9em; color: var(--text-secondary); margin-bottom: 5px; display: block;">Select Courses (Hold Ctrl/Cmd to select multiple):</label>
+          <select name="course_ids" id="studentCourseSelect" multiple size="5" style="height: auto; min-height: 120px; padding: 8px;">
+            <option value="" disabled>Loading courses...</option>
+          </select>
+          <div id="regNoPreview" style="padding: 10px; margin: 10px 0; background: var(--input-bg); border: 2px solid var(--primary-color); border-radius: 6px; display: none;">
+            <span style="font-size: 0.85em; color: var(--text-secondary);">📋 Registration Number (Auto-generated):</span>
+            <div style="font-weight: bold; font-size: 1.1em; color: var(--primary-color); margin-top: 5px;" id="regNoPreviewText">-</div>
+          </div>
           <input type="file" name="photo" accept="image/*" id="studentPhotoFile">
           <input type="hidden" id="studentPhotoData" name="photoData">
           <button type="button" onclick="openCamera('student')">📷 Use Camera</button>
@@ -444,7 +455,28 @@
       </div>
 
       <div class="form-section">
-        <h3>Courses List</h3>
+        <!-- Invalid courses warning banner -->
+        <div id="invalidCoursesWarning" style="display: none; background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(255,107,107,0.3);">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 24px;">⚠️</span>
+            <div style="flex: 1;">
+              <strong id="invalidCoursesCount">0</strong> invalid course(s) detected and hidden from view.
+              <div style="font-size: 12px; margin-top: 5px; opacity: 0.9;">
+                These courses are missing required fields (_id, name, or code).
+              </div>
+            </div>
+            <button onclick="quickCleanupCourses()" style="background: white; color: #ee5a24; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+              🧹 Delete Now
+            </button>
+          </div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h3 style="margin: 0;">Courses List</h3>
+          <button onclick="quickCleanupCourses()" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 8px rgba(255,107,107,0.3); transition: all 0.3s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(255,107,107,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(255,107,107,0.3)'">
+            🧹 Clean Up Invalid Courses
+          </button>
+        </div>
         <table id="coursesTable" class="widget-table" style="width: 100%;">
           <thead>
             <tr>
@@ -492,10 +524,11 @@
               <th>ID</th>
               <th>Name</th>
               <th>Subject</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="4">Loading...</td></tr>
+            <tr><td colspan="5">Loading...</td></tr>
           </tbody>
         </table>
       </div>
@@ -704,10 +737,11 @@
               <th>Student</th>
               <th>Course</th>
               <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="4">Loading...</td></tr>
+            <tr><td colspan="5">Loading...</td></tr>
           </tbody>
         </table>
       </div>
@@ -901,6 +935,79 @@
             <tr><td colspan="8">Loading...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Settings Page -->
+    <div id="settingsPage" class="page">
+      <h2>⚙️ Customization Settings</h2>
+      
+      <!-- Background Customization -->
+      <div class="form-section">
+        <h3>🎨 Background Customization</h3>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 10px; font-weight: 600;">
+            📷 Upload Custom Wallpaper
+          </label>
+          <input type="file" id="wallpaperInput" accept="image/*" style="padding: 10px; margin-bottom: 10px; width: 100%; max-width: 500px;">
+          <p style="color: #666; font-size: 0.9em; margin-bottom: 10px;">
+            Choose an image from your computer to use as dashboard background
+          </p>
+          <button onclick="applyCustomWallpaper()" style="padding: 10px 20px; background: #00BCD4; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            📤 Apply Wallpaper
+          </button>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 10px; font-weight: 600;">
+            🎨 Background Color
+          </label>
+          <input type="color" id="bgColorPicker" value="#f5f5f5" style="width: 100px; height: 50px; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; margin-right: 10px;">
+          <button onclick="applyBackgroundColor()" style="padding: 10px 20px; background: #FF9800; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            🎨 Apply Color
+          </button>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 10px; font-weight: 600;">
+            🔄 Reset to Default
+          </label>
+          <button onclick="resetBackground()" style="padding: 10px 20px; background: #f44336; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            🔄 Reset Background
+          </button>
+        </div>
+
+        <div style="padding: 15px; background: var(--card-bg); border-radius: 8px; border-left: 4px solid #00BCD4;">
+          <h4 style="margin-top: 0;">💡 Current Settings:</h4>
+          <p id="currentBgSettings" style="margin: 5px 0; color: #666;">
+            Background: Default
+          </p>
+        </div>
+      </div>
+
+      <!-- Login Page Background -->
+      <div class="form-section">
+        <h3>🔐 Login Page Background</h3>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 10px; font-weight: 600;">
+            📷 Upload Login Wallpaper
+          </label>
+          <input type="file" id="loginWallpaperInput" accept="image/*" style="padding: 10px; margin-bottom: 10px; width: 100%; max-width: 500px;">
+          <p style="color: #666; font-size: 0.9em; margin-bottom: 10px;">
+            Choose an image for the login page background
+          </p>
+          <button onclick="applyLoginWallpaper()" style="padding: 10px 20px; background: #00BCD4; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            📤 Apply Login Wallpaper
+          </button>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <button onclick="resetLoginBackground()" style="padding: 10px 20px; background: #f44336; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            🔄 Reset Login Background
+          </button>
+        </div>
       </div>
     </div>
   </main>
@@ -1341,13 +1448,14 @@
   </div>
 
   <!-- AI Chat Toggle Button (Floating) -->
-  <button id="aiChatBtn" class="ai-chat-toggle-btn" onclick="toggleAIChat()" title="Open AI Companion">
+  <button id="aiChatBtn" class="ai-chat-toggle-btn" title="Open AI Companion">
     🤖
   </button>
   
   <script src="queries.js?v=2.7"></script>
   <script src="app.js?v=2.7"></script>
   <script src="global-search.js?v=2.7"></script>
+  <script src="customization.js?v=2.7"></script>
   <script src="ai-companion.js?v=2.7"></script>
 </body>
 </html>
