@@ -1330,12 +1330,52 @@
         if (authPageContainer) authPageContainer.style.display = 'none';
         if (mainSidebar) mainSidebar.style.display = 'flex';
         if (mainContent) mainContent.style.display = 'flex';
+        
+        // Load user profile data
+        loadUserProfile();
       } else {
         // User not logged in - show auth page
         if (authPageContainer) authPageContainer.style.display = 'flex';
         if (mainSidebar) mainSidebar.style.display = 'none';
         if (mainContent) mainContent.style.display = 'none';
       }
+    }
+    
+    // Load user profile data
+    async function loadUserProfile() {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        // Decode JWT to get user info (simple decode without verification for display)
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('👤 User profile data:', payload);
+        
+        // Update sidebar profile
+        const sidebarName = document.getElementById('sidebarName');
+        const sidebarRole = document.getElementById('sidebarRole');
+        const sidebarPhoto = document.getElementById('sidebarPhoto');
+        
+        if (sidebarName) sidebarName.textContent = payload.email || 'User';
+        if (sidebarRole) sidebarRole.textContent = payload.role || 'Student';
+        if (sidebarPhoto) sidebarPhoto.src = payload.photoUrl || '';
+        
+      } catch (err) {
+        console.error('❌ Error loading user profile:', err);
+      }
+    }
+    
+    // Update sidebar profile with user data from server
+    function updateSidebarProfile(user) {
+      console.log('👤 Updating sidebar profile:', user);
+      
+      const sidebarName = document.getElementById('sidebarName');
+      const sidebarRole = document.getElementById('sidebarRole');
+      const sidebarPhoto = document.getElementById('sidebarPhoto');
+      
+      if (sidebarName) sidebarName.textContent = user.name || user.email || 'User';
+      if (sidebarRole) sidebarRole.textContent = user.role || 'Student';
+      if (sidebarPhoto) sidebarPhoto.src = user.photoUrl || '';
     }
     
     // Login Form
@@ -1358,6 +1398,12 @@
         if (data.token) {
           localStorage.setItem('token', data.token);
           alert('Login successful!');
+          
+          // Update profile immediately with server data
+          if (data.user) {
+            updateSidebarProfile(data.user);
+          }
+          
           checkAuth(); // Show dashboard
           loadDashboardStats(); // Load initial data
         } else {
@@ -1368,10 +1414,100 @@
       }
     });
     
+    // Print registration card
+    function printRegistrationCard(user, formData) {
+      const registrationDate = new Date().toLocaleDateString();
+      const registrationNumber = 'REG-' + Date.now().toString().slice(-8);
+      
+      const cardHTML = `
+        <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px; border: 3px solid #007bff; border-radius: 10px; background: linear-gradient(135deg, #f8f9fa, #e9ecef);">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <h1 style="color: #007bff; margin: 0; font-size: 24px;">📚 Student Management System</h1>
+            <h2 style="color: #6c757d; margin: 5px 0; font-size: 18px;">Registration Card</h2>
+          </div>
+          
+          <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+              <strong>Reg. No:</strong>
+              <span>${registrationNumber}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+              <strong>Name:</strong>
+              <span>${user.name || formData.get('name')}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+              <strong>Email:</strong>
+              <span>${user.email || formData.get('email')}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+              <strong>Role:</strong>
+              <span style="text-transform: capitalize;">${user.role || formData.get('role')}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+              <strong>Status:</strong>
+              <span style="color: #28a745; font-weight: bold;">✅ Active</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <strong>Registered:</strong>
+              <span>${registrationDate}</span>
+            </div>
+          </div>
+          
+          <div style="text-align: center; margin-top: 20px;">
+            <div style="width: 150px; height: 150px; margin: 0 auto 15px; border: 2px dashed #007bff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
+              ${user.photoUrl ? `<img src="${user.photoUrl}" style="width: 140px; height: 140px; border-radius: 50%; object-fit: cover;">` : '<div style="font-size: 48px;">👤</div>'}
+            </div>
+            <p style="margin: 5px 0; color: #6c757d; font-size: 12px;">This card serves as proof of registration</p>
+            <p style="margin: 5px 0; color: #6c757d; font-size: 12px;">Keep this card for your records</p>
+          </div>
+          
+          <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+            <p style="margin: 0; color: #6c757d; font-size: 10px;">Generated on: ${new Date().toLocaleString()}</p>
+          </div>
+        </div>
+      `;
+      
+      // Create a new window for printing
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Registration Card - ${user.name || formData.get('name')}</title>
+          <style>
+            @media print {
+              body { margin: 0; padding: 10px; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          ${cardHTML}
+          <div class="no-print" style="text-align: center; margin-top: 20px;">
+            <button onclick="window.print()" style="background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">🖨️ Print Card</button>
+            <button onclick="window.close()" style="background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">❌ Close</button>
+          </div>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+      
+      // Auto-print after a short delay
+      setTimeout(() => {
+        printWindow.print();
+      }, 1000);
+    }
+    
     // Signup Form
     document.getElementById('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(e.target);
+      
+      // Debug: Log all form data
+      console.log('📝 Form data submitted:');
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
       
       try {
         const res = await fetch('/api/auth/register', {
@@ -1380,16 +1516,26 @@
         });
         
         const data = await res.json();
+        console.log('📥 Server response:', data);
         
         if (data.token) {
           localStorage.setItem('token', data.token);
           alert('Account created successfully!');
+          
+          // Update profile immediately with server data
+          if (data.user) {
+            updateSidebarProfile(data.user);
+            // Print registration card
+            printRegistrationCard(data.user, formData);
+          }
+          
           checkAuth(); // Show dashboard
           loadDashboardStats(); // Load initial data
         } else {
           alert(data.error || 'Signup failed');
         }
       } catch (err) {
+        console.error('❌ Signup error:', err);
         alert('Signup error: ' + err.message);
       }
     });

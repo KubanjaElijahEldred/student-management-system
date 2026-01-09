@@ -560,8 +560,10 @@ function makeAIDraggable() {
     dragStartY = event.clientY - offsetY;
     dragDistance = 0;
     isDragging = true;
+    clickBlock = false; // Reset click block
     btn.style.cursor = 'grabbing';
     btn.style.animation = 'none';
+    e.preventDefault(); // Prevent default click behavior
   }
   
   // Mouse/Touch move - perform drag
@@ -592,23 +594,20 @@ function makeAIDraggable() {
     btn.style.cursor = 'grab';
     btn.style.animation = '';
     
-    // If dragged > 15px, it's a drag (save position)
-    // If dragged < 15px, it's a click (toggle chat)
-    if (dragDistance > 15) {
+    // If dragged > 10px, it's a drag (save position)
+    // If dragged < 10px, it's a click (toggle chat)
+    if (dragDistance > 10) {
       localStorage.setItem('aiButtonX', offsetX);
       localStorage.setItem('aiButtonY', offsetY);
       console.log('✅ Dragged to:', offsetX, offsetY);
-    } else if (!clickBlock) {
+    } else {
       // This was a click, not a drag
       console.log('👆 Clicked - toggling chat');
       toggleAIChat();
-      
-      // Block rapid clicks
-      clickBlock = true;
-      setTimeout(() => { clickBlock = false; }, 600);
     }
     
     e.preventDefault();
+    e.stopPropagation();
   }
   
   // Attach event listeners

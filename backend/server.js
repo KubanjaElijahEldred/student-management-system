@@ -32,32 +32,27 @@ app.get('*', (req, res) => {
 });
 
 async function start() {
-  // Start server FIRST, then try MongoDB
-  app.listen(PORT, () => {
-    console.log(`✅ Server running on http://localhost:${PORT}`);
-    console.log('Attempting to connect to MongoDB...');
-  });
-
-  // Try to connect to MongoDB (but don't stop server if it fails)
+  // Connect to MongoDB FIRST
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/schoolDB');
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/schoolDB', {
+      serverSelectionTimeoutMS: 5000, // 5 second timeout
+      bufferCommands: false
+    });
     console.log('✅ Connected to MongoDB');
   } catch (err) {
     console.error('❌ MongoDB connection failed:', err.message);
-    console.error('⚠️  Server is running but database features will not work!');
-    console.error('📌 To fix: Start MongoDB service or install MongoDB');
+    console.error('⚠️  Server will start but database features will not work!');
+    console.error('📌 To fix: Check MongoDB connection string and network');
     console.error('');
-    
-    // Retry connection every 10 seconds
-    setInterval(async () => {
-      try {
-        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/schoolDB');
-        console.log('✅ Connected to MongoDB');
-      } catch (e) {
-        // Silent retry
-      }
-    }, 10000);
   }
+
+  // Start server AFTER MongoDB connection attempt
+  app.listen(PORT, () => {
+    console.log(`✅ Server running on http://localhost:${PORT}`);
+    if (mongoose.connection.readyState !== 1) {
+      console.log('⚠️  Database not connected - login will not work');
+    }
+  });
 }
 
 start();
