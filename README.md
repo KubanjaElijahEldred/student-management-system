@@ -24,7 +24,7 @@ A modern school management system designed to help schools manage students, teac
 
 ![Home Page](./images/home.png)
 
-### Dashboard
+### Dashboard'
 
 ![Dashboard](./images/dashboard.png)
 
@@ -32,7 +32,7 @@ A modern school management system designed to help schools manage students, teac
 
 ![Students Page](./images/students.png)
 
-### Teachers Page
+### Teachers Page,
 
 ![Teachers Page](./images/teachers.png)
 
