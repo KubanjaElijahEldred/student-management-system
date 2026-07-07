@@ -1,4 +1,4 @@
-Student Management System
+Student Management System,
 
 A modern school management system designed to help schools manage students, teachers, classes, attendance, fees, exams, results, and communication in one platform.
 
